@@ -4,13 +4,15 @@
  <img src="assets/example.png" />
 </p>
 
- Customize the information saved in file- and folder names. Use the values of sampler parameters as part of file or folder names. <br>Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
+Customize the information saved in file- and folder names. Use the values of sampler parameters as part of file or folder names. <br>Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
+
+*Reboot by AudioscavengeR since 2024-05-05*
 
  ## Installation
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
-2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/ComfyUI-PowerSave) repo.
+2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo.
 ```
-git clone https://github.com/audioscavenger/ComfyUI-PowerSave
+git clone https://github.com/audioscavenger/save-image-extended-comfyui
 ```
 
 ## Parameters / Usage
@@ -20,7 +22,7 @@ git clone https://github.com/audioscavenger/ComfyUI-PowerSave
 - `filename_keys` - Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object they should work. The same applies to `foldername_keys`. 
 - `foldername_prefix` - String prefix added to folders.
 - `foldername_keys` - Comma separated string with sampler parameters to add to foldername.
-- `delimiter` - Delimiter character, either `underscore`, `dot`, or `comma`.
+- `delimiter` - Delimiter character or word, can be anything your file system supports. Windows users still use "/" for subfolders.
 - `save_job_data` - If enabled, saves information about each job as entries in a `jobs.json` text file, inside the generated folder. Mulitple options for saving `prompt`, `basic data`, `sampler settings`, `loaded models`.
 - `job_data_per_image` - When enabled, saves individual job data files for each image.
 - `job_custom_text` - Custom string to save along with the job data. Right click the node and convert to input to connect with another node.

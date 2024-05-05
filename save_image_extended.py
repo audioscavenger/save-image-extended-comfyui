@@ -14,8 +14,8 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 import folder_paths
 
-# class PowerSave -------------------------------------------------------------------------------
-class PowerSave:
+# class SaveImageExtended -------------------------------------------------------------------------------
+class SaveImageExtended:
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
     self.type = 'output'
@@ -93,7 +93,7 @@ class PowerSave:
       if key in keys_to_find:
         found_values[key] = value
       if isinstance(value, dict):
-        PowerSave.find_keys_recursively(value, keys_to_find, found_values)
+        SaveImageExtended.find_keys_recursively(value, keys_to_find, found_values)
   
   @staticmethod
   def remove_file_extension(value):
@@ -119,15 +119,15 @@ class PowerSave:
         # Match both formats: lora_xx and lora_name_x
         if re.match(r'lora(_name)?(_\d+)?', key):
           if value is not None:
-            value = PowerSave.remove_file_extension(value)
+            value = SaveImageExtended.remove_file_extension(value)
             loras_string += f'{value}, '
       
       # test if value is dict BEFORE cleaning up string value. come on, man...
       if isinstance(value, dict):
-        PowerSave.find_parameter_values(target_keys, value, found_values)
+        SaveImageExtended.find_parameter_values(target_keys, value, found_values)
       
       if key in target_keys:
-        value = PowerSave.remove_file_extension(value)
+        value = SaveImageExtended.remove_file_extension(value)
         found_values[key] = value
     
     if 'loras' in target_keys and loras_string:
@@ -145,7 +145,7 @@ class PowerSave:
     if prompt is not None and len(keys_to_extract) > 0:
       found_values = {'resolution': resolution}
       print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
-      PowerSave.find_keys_recursively(prompt, keys_to_extract, found_values)
+      SaveImageExtended.find_keys_recursively(prompt, keys_to_extract, found_values)
       for key in keys_to_extract:
         value = found_values.get(key)
         print(f"debug generate_custom_name: ----key: {key}")
@@ -162,7 +162,7 @@ class PowerSave:
           value = key
         
         if (isinstance(value, str)):
-          value = PowerSave.remove_file_extension(value)
+          value = SaveImageExtended.remove_file_extension(value)
           # prefix and keys can very well be subfolders ending or starting with a /
           # print(f"debug generate_custom_name: ------value0=: {value}")
           if (value.startswith('./') or value.startswith('/') or custom_name.endswith('/')):
@@ -185,7 +185,7 @@ class PowerSave:
       prompt_keys_to_save['custom_text'] = job_custom_text
     
     if 'models' in save_job_data:
-      models = PowerSave.find_parameter_values(['ckpt_name', 'loras', 'vae_name', 'model_name'], prompt)
+      models = SaveImageExtended.find_parameter_values(['ckpt_name', 'loras', 'vae_name', 'model_name'], prompt)
       if models.get('ckpt_name'):
         prompt_keys_to_save['checkpoint'] = models['ckpt_name']
       if models.get('loras'):
@@ -196,7 +196,7 @@ class PowerSave:
         prompt_keys_to_save['upscale_model'] = models['model_name']
     
     if 'sampler' in save_job_data:
-      prompt_keys_to_save['sampler_parameters'] = PowerSave.find_parameter_values(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'], prompt)
+      prompt_keys_to_save['sampler_parameters'] = SaveImageExtended.find_parameter_values(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'], prompt)
     
     if 'prompt' in save_job_data:
       if positive_text_opt is not None:
@@ -268,7 +268,7 @@ class PowerSave:
     with open(json_file_path, 'w') as f:
       json.dump(existing_data, f, indent=4)
 
-# class PowerSave -------------------------------------------------------------------------------
+# class SaveImageExtended -------------------------------------------------------------------------------
 
 
   def save_images(self,
@@ -299,8 +299,8 @@ class PowerSave:
     
     filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
     foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
-    custom_filename = PowerSave.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
-    custom_foldername = PowerSave.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
+    custom_filename = SaveImageExtended.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
+    custom_foldername = SaveImageExtended.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
     
     # Create and save images
     try:
@@ -334,14 +334,14 @@ class PowerSave:
         img.save(image_path, pnginfo=metadata, compress_level=4)
         
         if save_job_data != 'disabled' and job_data_per_image =='enabled':
-          PowerSave.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
+          SaveImageExtended.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
         
         subfolder = self.get_subfolder_path(image_path, self.output_dir)
         results.append({ 'filename': file, 'subfolder': subfolder, 'type': self.type})
         counter += 1
       
       if save_job_data != 'disabled' and job_data_per_image =='disabled':
-        PowerSave.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
+        SaveImageExtended.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
     
     except OSError as e:
       print(f'An error occurred while creating the subfolder or saving the image: {e}')
@@ -352,10 +352,10 @@ class PowerSave:
 
 
 NODE_CLASS_MAPPINGS = {
-  'PowerSave': PowerSave,
+  'SaveImageExtended': SaveImageExtended,
 }
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-  'PowerSave': 'Power Save',
+  'SaveImageExtended': 'Save Image Extended',
 }
