@@ -8,13 +8,14 @@
 
  ## Installation
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
-2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/thedyze/save-image-extended-comfyui) repo.
+2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/ComfyUI-PowerSave) repo.
 ```
-git clone https://github.com/thedyze/save-image-extended-comfyui
+git clone https://github.com/audioscavenger/ComfyUI-PowerSave
 ```
 
 ## Parameters / Usage
 
+- `output_ext` -  File extension: PNG by default, or WEBP.
 - `filename_prefix` -  String prefix added to files.
 - `filename_keys` - Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object they should work. The same applies to `foldername_keys`. 
 - `foldername_prefix` - String prefix added to folders.
