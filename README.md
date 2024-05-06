@@ -1,4 +1,5 @@
 # Save Image Extended for ComfyUI
+version = 2.4
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -7,6 +8,8 @@
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_: 
+* Oh btw... also saves your output as **WebP** or **JPEG**... And yes the prompt is included :) But ComfyUI cannot load it yet...
+
 
 <br>
 <p align="center">
@@ -15,7 +18,7 @@
  Happy saving!
 </p>
 
-*Reboot by AudioscavengeR since 2024-05-05*
+*Reboot by AudioscavengeR since 2024-05-05, original idea from [@thedyze](https://github.com/thedyze/save-image-extended-comfyui)*
 
  ## Installation
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
@@ -60,7 +63,22 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-Incompatible with *extended-saveimage-comfyui* - This node can be discarded, as it only offers WebP output. I will add WebP and Avif very soon.
+* WebP and JPEG quality are fixed at 91.
+* PNG is maxed compressed (9)
+
+#
+About extensions WebP AVIF JPEG: ComfyUI cannot load it atm... Feel free to ask ComfyUI team to add support for AVIF WebP Jpeg!
+
+The prompt is included under the **EXIF** tag `UserComment` (IFD0 / 0x9286) as defined [here](https://exiftool.org/TagNames/EXIF.html).
+It is saved in this form: `UserComment = {"prompt": {"1": {"inputs": {...}}}}`.
+
+You can retrieve the prompt manually with [exiftool](https://exiftool.org/), here are some example commands:
+- `exiftool -Parameters -Prompt -Workflow file.png`
+- `exiftool -Parameters -UserComment -Prompt -Workflow file.{jpg|webp|avif}`
+
+
+#
+Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node already adds JPEG and WebP.
 
 #
 You asked for it... Now you can select which node to get the widget values from! Formerly, this custom node would simply return the last value found: useles if you have many Ksamplers...
@@ -86,17 +104,6 @@ I won't promise anything, just like @thedyze did not promise anything when they 
 
 However, I do provide a way to contact me, and will accept PR and collabs. Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
-- [x] now accepts inexistant keys and use them as fixed strings
-- [x] now accepts inexistant keys with / and use them as subfolders
-- [x] delimiter is now whatever you want, free field. Limited to 16 characters tho
-- [x] all is instance methods, previously we had @staticmethods. Why? Don't know.
-- [x] check get_latest_counter: does it still work with subfolders? yessir
-- [x] bugfix: custom_name was not updated for int and floats
-- [x] for each keys, we return only the last value found in the prompt. Not the last Ksampler. Impossible to know which one is the last. Therefore, simply use this syntax: number.widget_name
-- [x] filename_keys and foldername_keys become too large, switch to multiline
-- [x] also removes subfolders from values found, when people use subfolders like SD15/pytorch_blah.pt etc
-- [x] added what I was looking for the last 6 months in the first place: 123.attribute from nodes!
-- [x] limit delimiter to 1 char, or file counter will get too complex
 - [ ] save_job_to_json is pretty much useless actually, since it only saves the last value found for each node
 - [ ] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder
 - [ ] what is job_custom_text?
@@ -105,6 +112,29 @@ However, I do provide a way to contact me, and will accept PR and collabs. Once 
 - [ ] integrate pngquant
 - [ ] integrate optipng
 - [ ] integrate avif? can it hold metadata?
-- [ ] integrate webp
+- [ ] offer to place the counter anywhere, as a key in filename_keys
 
+### release 2.4
+- [x] integrate webp
+- [x] integrate jpg
+
+### release 2.3
+- [x] for each keys, we return only the last value found in the prompt. Not the last Ksampler. Impossible to know which one is the last. Therefore, simply use this syntax: number.widget_name
+- [x] filename_keys and foldername_keys become too large, switch to multiline
+- [x] also removes subfolders from values found, when people use subfolders like SD15/pytorch_blah.pt etc
+- [x] added what I was looking for the last 6 months in the first place: 123.attribute from nodes!
+- [x] limit delimiter to 1 char, or file counter will get too complex
+
+### release 2.2
+- [x] delimiter is now whatever you want, free field. Limited to 16 characters tho
+- [x] all is instance methods, previously we had @staticmethods. Why? Don't know.
+- [x] check get_latest_counter: does it still work with subfolders? yessir
+- [x] bugfix: custom_name was not updated for int and floats
+
+### release 2.1
+- [x] now accepts inexistant keys and use them as fixed strings
+- [x] now accepts inexistant keys with / and use them as subfolders
+
+### release 2.0
+- [x] Reboot on 2024-05-05
 

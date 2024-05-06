@@ -2,31 +2,50 @@ import os
 import re
 import sys
 import json
-from PIL import Image
+from PIL import Image, ExifTags
 from PIL.PngImagePlugin import PngInfo
 import numpy as np
 import locale
 from datetime import datetime
 from pathlib import Path
+import folder_paths
+import pprint
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'comfy'))
 original_locale = locale.setlocale(locale.LC_TIME, '')
 
-import folder_paths
-import pprint
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  type = 'output'
-  # counter_position = ['last', 'first', 'in filename_keys'] hmmmm not yet
-  counter_position = ['last', 'first', 'in filename_keys']
-  extToRemove = ['.safetensors', '.ckpt', '.pt']
-  png_compress_level = 9
+  version                 = 2.4
+  type                    = 'output'
+  
+  png_compress_level      = 9
+  avif_quality            = 91
+  webp_quality            = 91
+  jpeg_quality            = 91
+  
+  filename_prefix         = 'myFile'
+  filename_keys           = 'sampler_name, scheduler, cfg, steps'
+  foldername_prefix       = 'myFolder'
+  foldername_keys         = 'ckpt_name, ./exampleSubfolder'
+  delimiter               = '_'
+  save_job_data           = 'basic, models, sampler, prompt'
+  job_data_per_image      = False
+  job_custom_text         = ''
+  save_metadata           = True
+  counter_digits          = 4
+  counter_position        = 'last'
+  counter_positions       = ['last', 'first']
+  one_counter_per_folder  = True
+  image_preview           = True
+  extToRemove             = ['.safetensors', '.ckpt', '.pt']
+  output_ext              = '.png'
+  output_exts             = ['.png', '.webp', '.jpg']
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
     self.prefix_append = ''
-  
   
   """
   Return a dictionary which contains config for all input fields.
@@ -47,26 +66,32 @@ class SaveImageExtended:
     return {
       'required': {
         'images': ('IMAGE', ),
-        'filename_prefix': ('STRING', {'default': 'myFile', 'multiline': False}),
-        'filename_keys': ('STRING', {'default': 'sampler_name, scheduler, cfg, steps', 'multiline': True}),
-        'foldername_prefix': ('STRING', {'default': 'saveExtended/', 'multiline': False}),
-        'foldername_keys': ('STRING', {'default': 'ckpt_name, ./exampleSubfolder', 'multiline': True}),
-        'delimiter': ('STRING', {'default': '_', 'multiline': False}),
-        'save_job_data': (['disabled', 'prompt', 'basic, prompt', 'basic, sampler, prompt', 'basic, models, sampler, prompt'],{'default': 'basic, models, sampler, prompt'}),
-        'job_data_per_image': ([False, True], {'default': False}),
-        'job_custom_text': ('STRING', {'default': '', 'multiline': False}),
-        'save_metadata': ([True, False], {'default': True}),
-        'counter_digits': ("INT", {
-          "default": 4, 
+        'filename_prefix': ('STRING', {'default': self.filename_prefix, 'multiline': False}),
+        'filename_keys': ('STRING', {'default': self.filename_keys, 'multiline': True}),
+        'foldername_prefix': ('STRING', {'default': self.foldername_prefix, 'multiline': False}),
+        'foldername_keys': ('STRING', {'default': self.foldername_keys, 'multiline': True}),
+        'delimiter': ('STRING', {'default': self.delimiter, 'multiline': False}),
+        'save_job_data': ([
+          'disabled', 
+          'prompt', 
+          'basic, prompt', 
+          'basic, sampler, prompt', 
+          'basic, models, sampler, prompt'
+        ],{'default': self.save_job_data}),
+        'job_data_per_image': ([False, True], {'default': self.job_data_per_image}),
+        'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False}),
+        'save_metadata': ([True, False], {'default': self.save_metadata}),
+        'counter_digits': ('INT', {
+          "default": self.counter_digits, 
           "min": 1, 
           "max": 8, 
           "step": 1,
           "display": "silder"
          }),
-        'counter_position': (['last', 'first'], {'default': 'last'}),
-        'one_counter_per_folder': ([True, False], {'default': True}),
-        'image_preview': ([True, False], {'default': True}),
-        'output_ext': (['.png'], {'default': '.png'}),
+        'counter_position': (self.counter_positions, {'default': self.counter_position}),
+        'one_counter_per_folder': ([True, False], {'default': self.one_counter_per_folder}),
+        'image_preview': ([True, False], {'default': self.image_preview}),
+        'output_ext': (self.output_exts, {'default': self.output_ext}),
       },
       'optional': {
         'positive_text_opt': ('STRING', {'forceInput': True}),
@@ -91,7 +116,7 @@ class SaveImageExtended:
   
   
   # Get current counter number from file names
-  def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits, counter_position='last', output_ext='.png'):
+  def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits=counter_digits, counter_position=counter_position, output_ext=output_ext):
     counter = 1
     if not os.path.exists(folder_path):
       print(f"SaveImageExtended error: Folder {folder_path} does not exist, starting counter at 1.")
@@ -100,7 +125,7 @@ class SaveImageExtended:
     try:
       files = [file for file in os.listdir(folder_path) if file.endswith(output_ext)]
       if files:
-        if counter_position not in self.counter_position: counter_position = self.counter_position[0]
+        if counter_position not in self.counter_positions: counter_position = self.counter_position
         if counter_position == 'last':
           # BUG: this works only if extension is 3 letters like png, this will break with webp and avif:
           counters = [int(file[-(4 + counter_digits):-4]) if file[-(4 + counter_digits):-4].isdigit() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
@@ -182,7 +207,7 @@ class SaveImageExtended:
         if len(splitKey) > 1:
           node, nodeKey = splitKey[0], splitKey[1]
           if node in prompt:
-            print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
+            # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
             # splitKey[0] = #node number found in prompt, we will recurse only in that node:
             value = self.find_keys_recursively(prompt[node], [nodeKey], found_values)
           else:
@@ -197,12 +222,12 @@ class SaveImageExtended:
         # at this point we have a nodeKey but maybe no value
         # now we analyze each value found and format them accordingly:
         value = found_values[nodeKey]
-        print(f"debug generate_custom_name: ----key: {nodeKey}")
-        print(f"debug generate_custom_name: ----value: {value}")
+        # print(f"debug generate_custom_name: ----key: {nodeKey}")
+        # print(f"debug generate_custom_name: ----value: {value}")
 
         if value is None:
           # key not found = it's a fixed string
-          print(f"debug generate_custom_name: ------value=key: {nodeKey}")
+          # print(f"debug generate_custom_name: ------value=key: {nodeKey}")
           value = nodeKey
         
         if isinstance(value, float):
@@ -316,6 +341,58 @@ class SaveImageExtended:
     
     with open(json_file_path, 'w') as f:
       json.dump(existing_data, f, indent=4)
+  
+  
+  def get_metadata_png(self, img, prompt, extra_pnginfo=None):
+    metadata = PngInfo()
+    if prompt is not None:
+      metadata.add_text('prompt', json.dumps(prompt))
+    if extra_pnginfo is not None:
+      for x in extra_pnginfo:
+        metadata.add_text(x, json.dumps(extra_pnginfo[x]))
+    
+    return metadata
+  
+  
+  def get_metadata_exif(self, img, prompt, extra_pnginfo=None):
+    metadata = {}
+    if prompt is not None:
+      metadata["prompt"] = prompt
+    if extra_pnginfo is not None:
+      metadata.update(extra_pnginfo)
+    exif = img.getexif()
+    exif[ExifTags.Base.UserComment] = json.dumps(metadata)
+    
+    # For Comfy to load an image, it need a PNG tag at the root: Prompt={prompt}
+    # For AVIF WebP Jpeg, it's only Exif that's available... and UserComment is the best choice.
+    # Unfortunately, ComfyUI does not read any other tag... feel free to ask ComfyUI to add support for AVIF WebP Jpeg!
+
+    return exif.tobytes()
+  
+  
+  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None):
+    # print(f"debug save_images: image_path={image_path}")
+    output_ext = os.path.splitext(os.path.basename(image_path))[1]
+    metadata = None
+    kwargs = dict()
+    
+    # match is python 3.10+
+    match output_ext:
+      case '.webp':
+        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+        kwargs["lossless"] = False
+        kwargs["quality"] = self.webp_quality
+        if self.webp_quality == 100: kwargs["lossless"] = True
+      case '.jpg':
+        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+        kwargs["quality"] = self.jpeg_quality
+      case _:
+        if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
+        kwargs["compress_level"] = self.png_compress_level
+        # png
+      
+    # img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
+    img.save(image_path, **kwargs)
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 
@@ -333,13 +410,13 @@ class SaveImageExtended:
       job_data_per_image,
       job_custom_text,
       save_metadata,
-      filename_prefix='myFile',
-      foldername_prefix='saveExtended/',
+      filename_prefix=filename_prefix,
+      foldername_prefix=foldername_prefix,
       extra_pnginfo=None,
       negative_text_opt=None,
       positive_text_opt=None,
       prompt=None,
-      output_ext='.png'
+      output_ext=output_ext
     ):
     
     # Get set resolution value
@@ -362,20 +439,12 @@ class SaveImageExtended:
       # print(f"debug save_images: output_path={output_path}")
       os.makedirs(output_path, exist_ok=True)
       counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
-      # print(f"debug save_images: counter={counter}")
+      # print(f"debug save_images: counter for {output_ext}: {counter}")
     
       results = list()
       for image in images:
         i = 255. * image.cpu().numpy()
         img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
-        metadata = None
-        if save_metadata:
-          metadata = PngInfo()
-          if prompt is not None:
-            metadata.add_text('prompt', json.dumps(prompt))
-          if extra_pnginfo is not None:
-            for x in extra_pnginfo:
-              metadata.add_text(x, json.dumps(extra_pnginfo[x]))
         
         if counter_position == 'last':
           file = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
@@ -383,8 +452,7 @@ class SaveImageExtended:
           file = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         
         image_path = os.path.join(output_path, file)
-        # print(f"debug save_images: image_path={image_path}")
-        img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
+        self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo)
         
         if save_job_data != 'disabled' and job_data_per_image:
           self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
@@ -425,119 +493,3 @@ NODE_DISPLAY_NAME_MAPPINGS = {
                   # 'scheduler': 'sgm_uniform',
                   # 'seed': 233248937945750,
                   # 'steps': 4}},
- # '12': {'class_type': 'KSampler',
-        # 'inputs': {'cfg': 1.6,
-                   # 'denoise': 0.22,
-                   # 'model': ['2', 0],
-                   # 'negative': ['5', 0],
-                   # 'positive': ['4', 0],
-                   # 'sampler_name': 'lcm',
-                   # 'scheduler': 'sgm_uniform',
-                   # 'seed': 697295967325855,
-                   # 'steps': 4}},
- # '13': {'class_type': 'VAEDecode',
-        # 'inputs': {'samples': ['23', 0], 'vae': ['3', 2]}},
- # '2': {'class_type': 'LoraLoader',
-       # 'inputs': {'clip': ['9', 1],
-                  # 'lora_name': 'lcm\\SD1.5\\pytorch_lora_weights.safetensors',
-                  # 'model': ['9', 0],
-                  # 'strength_clip': 1.0,
-                  # 'strength_model': 1.0}},
- # '23': {'class_type': 'KSampler',
-        # 'inputs': {'cfg': 1.6,
-                   # 'denoise': 0.1,
-                   # 'latent_image': ['45', 0],
-                   # 'model': ['2', 0],
-                   # 'negative': ['5', 0],
-                   # 'positive': ['4', 0],
-                   # 'sampler_name': 'lcm',
-                   # 'scheduler': 'sgm_uniform',
-                   # 'seed': 697295967325855,
-                   # 'steps': 4}},
- # '25': {'class_type': 'VAEDecode',
-        # 'inputs': {'samples': ['12', 0], 'vae': ['3', 2]}},
- # '3': {'class_type': 'CheckpointLoaderSimple',
-       # 'inputs': {'ckpt_name': 'epicrealism_naturalSinRC1VAE.safetensors'}},
- # '35': {'class_type': 'SaveImageExtended',
-        # 'inputs': {'counter_digits': 4,
-                   # 'counter_position': 'last',
-                   # 'delimiter': '-',
-                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps, '
-                                    # 'upscale2',
-                   # 'filename_prefix': 'LCM',
-                   # 'foldername_keys': 'ckpt_name, ./upscale',
-                   # 'foldername_prefix': 'LCM-LoRA-basic/',
-                   # 'image_preview': True,
-                   # 'images': ['13', 0],
-                   # 'job_custom_text': '',
-                   # 'job_data_per_image': False,
-                   # 'one_counter_per_folder': True,
-                   # 'output_ext': '.png',
-                   # 'save_job_data': 'basic, models, sampler, prompt',
-                   # 'save_metadata': True}},
- # '36': {'class_type': 'SaveImageExtended',
-        # 'inputs': {'counter_digits': 4,
-                   # 'counter_position': 'last',
-                   # 'delimiter': '-',
-                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps',
-                   # 'filename_prefix': 'LCM',
-                   # 'foldername_keys': 'ckpt_name',
-                   # 'foldername_prefix': 'LCM-LoRA-basic/',
-                   # 'image_preview': True,
-                   # 'images': ['7', 0],
-                   # 'job_custom_text': '',
-                   # 'job_data_per_image': False,
-                   # 'one_counter_per_folder': True,
-                   # 'output_ext': '.png',
-                   # 'save_job_data': 'basic, models, sampler, prompt',
-                   # 'save_metadata': True}},
- # '37': {'class_type': 'SaveImageExtended',
-        # 'inputs': {'counter_digits': 4,
-                   # 'counter_position': 'last',
-                   # 'delimiter': '-',
-                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps, '
-                                    # 'upscale1',
-                   # 'filename_prefix': 'LCM',
-                   # 'foldername_keys': 'ckpt_name, ./upscale',
-                   # 'foldername_prefix': 'LCM-LoRA-basic/',
-                   # 'image_preview': False,
-                   # 'images': ['25', 0],
-                   # 'job_custom_text': '',
-                   # 'job_data_per_image': False,
-                   # 'one_counter_per_folder': True,
-                   # 'output_ext': '.png',
-                   # 'save_job_data': 'basic, models, sampler, prompt',
-                   # 'save_metadata': True}},
- # '4': {'class_type': 'CLIPTextEncode',
-       # 'inputs': {'clip': ['3', 1],
-                  # 'text': 'portrait of an old man, hires, masterpiece, full '
-                          # 'body, cinematic lighting'}},
- # '45': {'class_type': 'ttN hiresfixScale',
-        # 'inputs': {'crop': 'disabled',
-                   # 'height': 1024,
-                   # 'image': ['25', 0],
-                   # 'image_output': 'Hide',
-                   # 'longer_side': 1024,
-                   # 'model_name': '4x-UltraSharp.pth',
-                   # 'output_latent': True,
-                   # 'percent': 40,
-                   # 'rescale': 'by percentage',
-                   # 'rescale_after_model': True,
-                   # 'rescale_method': 'nearest-exact',
-                   # 'save_prefix': 'ComfyUI',
-                   # 'vae': ['3', 2],
-                   # 'width': 1024}},
- # '48': {'class_type': 'UpscaleModelLoader',
-        # 'inputs': {'model_name': '001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth'}},
- # '5': {'class_type': 'CLIPTextEncode',
-       # 'inputs': {'clip': ['3', 1], 'text': 'lowres, worst quality'}},
- # '6': {'class_type': 'EmptyLatentImage',
-       # 'inputs': {'batch_size': 1, 'height': 512, 'width': 512}},
- # '7': {'class_type': 'VAEDecode',
-       # 'inputs': {'samples': ['1', 0], 'vae': ['3', 2]}},
- # '9': {'class_type': 'LoraLoader',
-       # 'inputs': {'clip': ['3', 1],
-                  # 'lora_name': 'epiCRealismHelper.safetensors',
-                  # 'model': ['3', 0],
-                  # 'strength_clip': 1.0,
-                  # 'strength_model': 0.6}}}
