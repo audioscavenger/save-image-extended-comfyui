@@ -18,10 +18,10 @@ import pprint
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
   type = 'output'
-  counter_position = ['last', 'first']
+  # counter_position = ['last', 'first', 'in filename_keys'] hmmmm not yet
+  counter_position = ['last', 'first', 'in filename_keys']
   extToRemove = ['.safetensors', '.ckpt', '.pt']
   png_compress_level = 9
-  delimiter_max = 16
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
@@ -48,9 +48,9 @@ class SaveImageExtended:
       'required': {
         'images': ('IMAGE', ),
         'filename_prefix': ('STRING', {'default': 'myFile', 'multiline': False}),
-        'filename_keys': ('STRING', {'default': 'sampler_name, scheduler, cfg, steps', 'multiline': False}),
+        'filename_keys': ('STRING', {'default': 'sampler_name, scheduler, cfg, steps', 'multiline': True}),
         'foldername_prefix': ('STRING', {'default': 'saveExtended/', 'multiline': False}),
-        'foldername_keys': ('STRING', {'default': 'ckpt_name, ./exampleSubfolder', 'multiline': False}),
+        'foldername_keys': ('STRING', {'default': 'ckpt_name, ./exampleSubfolder', 'multiline': True}),
         'delimiter': ('STRING', {'default': '_', 'multiline': False}),
         'save_job_data': (['disabled', 'prompt', 'basic, prompt', 'basic, sampler, prompt', 'basic, models, sampler, prompt'],{'default': 'basic, models, sampler, prompt'}),
         'job_data_per_image': ([False, True], {'default': False}),
@@ -98,13 +98,14 @@ class SaveImageExtended:
       return counter
     
     try:
-      files = [f for f in os.listdir(folder_path) if f.endswith(output_ext)]
+      files = [file for file in os.listdir(folder_path) if file.endswith(output_ext)]
       if files:
         if counter_position not in self.counter_position: counter_position = self.counter_position[0]
         if counter_position == 'last':
-          counters = [int(f[-(4 + counter_digits):-4]) if f[-(4 + counter_digits):-4].isdigit() else 0 for f in files if one_counter_per_folder or f.startswith(filename_prefix)]
+          # BUG: this works only if extension is 3 letters like png, this will break with webp and avif:
+          counters = [int(file[-(4 + counter_digits):-4]) if file[-(4 + counter_digits):-4].isdigit() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
         else:
-          counters = [int(f[:counter_digits]) if f[:counter_digits].isdigit() else 0 for f in files if one_counter_per_folder or f[counter_digits +1:].startswith(filename_prefix)]
+          counters = [int(file[:counter_digits]) if file[:counter_digits].isdigit() else 0 for file in files if one_counter_per_folder or file[counter_digits +1:].startswith(filename_prefix)]
         
         if counters:
           counter = max(counters) + 1
@@ -115,36 +116,31 @@ class SaveImageExtended:
     return counter
   
   
-  def find_keys_recursively(self, obj, keys_to_find, found_values):
-    for key, value in obj.items():
+  def find_keys_recursively(self, prompt, keys_to_find, found_values):
+    for key, value in prompt.items():
       if key in keys_to_find:
         found_values[key] = value
-      if isinstance(value, dict):
+      elif isinstance(value, dict):
         self.find_keys_recursively(value, keys_to_find, found_values)
   
   
-  def remove_file_extension(self, value):
+  def cleanup_fileName(self, value):
     if isinstance(value, str):
-      for ext in self.extToRemove:
-        value = value.removesuffix(ext)
+      # takes care of all the possible safetensor extensions under the sun
+      value = os.path.splitext(os.path.basename(value))[0]
     return value
   
   
-  def find_parameter_values(self, target_keys, obj, found_values=None):
-    if found_values is None:
-      found_values = {}
-    
-    if not isinstance(target_keys, list):
-      target_keys = [target_keys]
-    
+  # this method pretty much does the same as find_keys_recursively, except it's for job.json export
+  def find_parameter_values(self, target_keys, prompt, found_values={}):
     loras_string = ''
-    for key, value in obj.items():
+    for key, value in prompt.items():
       # print(f"debug find_parameter_values: key={key} value={value}")
       if 'loras' in target_keys:
         # Match both formats: lora_xx and lora_name_x
         if re.match(r'lora(_name)?(_\d+)?', key):
           if value is not None:
-            value = self.remove_file_extension(value)
+            value = self.cleanup_fileName(value)
             loras_string += f'{value}, '
       
       # test if value is dict BEFORE cleaning up string value. come on, man...
@@ -152,7 +148,7 @@ class SaveImageExtended:
         self.find_parameter_values(target_keys, value, found_values)
       
       if key in target_keys:
-        value = self.remove_file_extension(value)
+        value = self.cleanup_fileName(value)
         found_values[key] = value
     
     if 'loras' in target_keys and loras_string:
@@ -167,34 +163,62 @@ class SaveImageExtended:
   def generate_custom_name(self, keys_to_extract, prefix, delimiter, resolution, prompt):
     custom_name = prefix
     if prompt is not None and len(keys_to_extract) > 0:
-      found_values = {'resolution': resolution}
+      found_values = {}
       # print(f"debug generate_custom_name: --prefix: {prefix}")
       # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
       # print(f"debug generate_custom_name: --prompt:")
       # pprint.pprint(prompt)
-      self.find_keys_recursively(prompt, keys_to_extract, found_values)
+      
+      # now separating numbered keys from non-numbered keys:
+      #   37.ckpt_name = i want the ckpt_name from node #37
+      #      ckpt_name = i want the ckpt_name from the highest numbered node = the last one found
+      # prompt looks like this:
+      # {'1': {'class_type': 'KSampler',
+      #   'inputs': {'cfg': 1.6, 
+      #     'denoise': 1.0, ...
       for key in keys_to_extract:
-        value = found_values.get(key)
-        # print(f"debug generate_custom_name: ----key: {key}")
-        # print(f"debug generate_custom_name: ----value: {value}")
-        if value is not None:
-          if isinstance(value, float):
-            value = round(float(value), 1)
+        node, nodeKey = None, None
+        splitKey = key.split('.')
+        if len(splitKey) > 1:
+          node, nodeKey = splitKey[0], splitKey[1]
+          if node in prompt:
+            print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
+            # splitKey[0] = #node number found in prompt, we will recurse only in that node:
+            value = self.find_keys_recursively(prompt[node], [nodeKey], found_values)
+          else:
+            # if splitKey[0] = #node number not found in prompt, we will just inform the user
+            print(f"SaveImageExtended info: node #{node} not found")
         else:
-          # key not found = it's a fixed string
-          # print(f"debug generate_custom_name: ------value=key: {key}")
-          value = key
+          # from now on we will wotk with nodeKey, that will save us tons of if then else
+          nodeKey = key
+          # we just try and find the last value for that key, whichever node it's in:
+          value = self.find_keys_recursively(prompt, [nodeKey], found_values)
         
-        if (isinstance(value, str)):
-          value = self.remove_file_extension(value)
+        # at this point we have a nodeKey but maybe no value
+        # now we analyze each value found and format them accordingly:
+        value = found_values[nodeKey]
+        print(f"debug generate_custom_name: ----key: {nodeKey}")
+        print(f"debug generate_custom_name: ----value: {value}")
+
+        if value is None:
+          # key not found = it's a fixed string
+          print(f"debug generate_custom_name: ------value=key: {nodeKey}")
+          value = nodeKey
+        
+        if isinstance(value, float):
+          value = round(float(value), 1)
+        
+        # now we build the custom_name:
+        if isinstance(value, str):
+          value = self.cleanup_fileName(value)
           # prefix and keys can very well be subfolders ending or starting with a /
-          # print(f"debug generate_custom_name: ------value0=: {value}")
           if (value.startswith('./') or value.startswith('/') or custom_name.endswith('/')):
             # for subfolders, do not start filename with a delimiter...
             custom_name += f"{value}"
           else:
             custom_name += f"{delimiter}{value}"
         else:
+          # could be int or float, can't be anything else
           custom_name += f"{delimiter}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
     return custom_name.strip(delimiter)
@@ -323,13 +347,13 @@ class SaveImageExtended:
     img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
     resolution = f'{img.width}x{img.height}'
     
-    delimiter = delimiter[:self.delimiter_max] if len(delimiter) > self.delimiter_max else delimiter
+    delimiter = delimiter[0]
     filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
     foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
     custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
     custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
     
-    # Create and save images
+    # Create folders, count images, save images
     try:
       full_output_folder, filename, _, _, custom_filename = folder_paths.get_save_image_path(custom_filename, self.output_dir, images[0].shape[1], images[0].shape[0])
       output_path = os.path.join(full_output_folder, custom_foldername)
@@ -339,7 +363,7 @@ class SaveImageExtended:
       os.makedirs(output_path, exist_ok=True)
       counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
       # print(f"debug save_images: counter={counter}")
-
+    
       results = list()
       for image in images:
         i = 255. * image.cpu().numpy()
