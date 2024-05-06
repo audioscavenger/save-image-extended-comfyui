@@ -58,15 +58,9 @@ Convert the 'prefix' parameters to inputs (right click in the node and select e.
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
+
 #
-Imcompatible with *extended-saveimage-comfyui* - This node can be discarded, as it only offers WebP output. I will add WebP and Avif very soon.
-#
-<br>
-<p align="center">
- <img src="assets/save-image-extended-comfyui-jobs-example.png" />
-<br><br>
- Happy saving!
-</p>
+Incompatible with *extended-saveimage-comfyui* - This node can be discarded, as it only offers WebP output. I will add WebP and Avif very soon.
 
 #
 You asked for it... Now you can select which node to get the widget values from! Formerly, this custom node would simply return the last value found: useles if you have many Ksamplers...
@@ -74,6 +68,13 @@ Make sure you enable the badge IDs to benefit from this:
 <br>
 <p align="center">
  <img src="assets/ComfyUI-enable-badge-ids.png" />
+</p>
+
+#
+jobs.json sample:
+<br>
+<p align="center">
+ <img src="assets/save-image-extended-comfyui-jobs-example.png" />
 <br><br>
  Happy saving!
 </p>
