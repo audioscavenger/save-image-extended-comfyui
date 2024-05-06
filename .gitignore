@@ -1,2 +1,8 @@
+backup/
+*.7z
+*.zip
+gitsync*
+*.url
+*.lnk
 desktop.ini
 __pycache__/

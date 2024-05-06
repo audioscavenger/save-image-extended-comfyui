@@ -22,7 +22,7 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 | `filename_keys` | Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object they should work. The same applies to `foldername_keys`. |
 | `foldername_prefix` | String prefix added to folders. |
 | `foldername_keys` | Comma separated string with _sampler_ parameters to add to foldername. Add more subfolders by prepending "./" to the key name. |
-| `delimiter` | Delimiter character or word, can be anything your file system supports. Windows users still use "/" for subfolders. |
+| `delimiter` | **now a free field** Delimiter character or word, can be anything your file system supports. Windows users should still use "/" for subfolders. |
 | `save_job_data` | If enabled, saves information about each job as entries in a `jobs.json` text file, inside the generated folder. Mulitple options for saving `prompt`, `basic data`, `sampler settings`, `loaded models`. |
 | `job_data_per_image` | When enabled, saves individual job data files for each image. |
 | `job_custom_text` | Custom string to save along with the job data. Right click the node and convert to input to connect with another node. |
@@ -68,6 +68,8 @@ However, I do provide a way to contact me, and will accept PR and collabs. Once 
 - [x] delimiter is now whatever you want, free field. Limited to 16 characters tho
 - [x] all is instance methods, previously we had @staticmethods. Why? Don't know.
 - [x] check get_latest_counter: does it still work with subfolders? yessir
+- [ ] add what I was looking for the last 6 months in the first place: %node.attribute% from any node.
+- [ ] add what I was looking for the last 6 months in the first place: #000.attribute from any node.
 - [ ] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder
 - [ ] what is job_custom_text?
 - [ ] what is jobs.json? History, alraight. What do you do with that? Can we disable it?
