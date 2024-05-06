@@ -68,6 +68,7 @@ However, I do provide a way to contact me, and will accept PR and collabs. Once 
 - [x] delimiter is now whatever you want, free field. Limited to 16 characters tho
 - [x] all is instance methods, previously we had @staticmethods. Why? Don't know.
 - [x] check get_latest_counter: does it still work with subfolders? yessir
+- [x] bugfix: custom_name was not updated for int and floats
 - [ ] add what I was looking for the last 6 months in the first place: %node.attribute% from any node.
 - [ ] add what I was looking for the last 6 months in the first place: #000.attribute from any node.
 - [ ] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder

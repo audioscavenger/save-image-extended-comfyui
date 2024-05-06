@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'co
 original_locale = locale.setlocale(locale.LC_TIME, '')
 
 import folder_paths
+import pprint
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
@@ -93,7 +94,7 @@ class SaveImageExtended:
   def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits, counter_position='last', output_ext='.png'):
     counter = 1
     if not os.path.exists(folder_path):
-      print(f"Folder {folder_path} does not exist, starting counter at 1.")
+      print(f"SaveImageExtended error: Folder {folder_path} does not exist, starting counter at 1.")
       return counter
     
     try:
@@ -109,7 +110,7 @@ class SaveImageExtended:
           counter = max(counters) + 1
     
     except Exception as e:
-      print(f"An error occurred while finding the latest counter: {e}")
+      print(f"SaveImageExtended error: An error occurred while finding the latest counter: {e}")
     
     return counter
   
@@ -167,20 +168,20 @@ class SaveImageExtended:
     custom_name = prefix
     if prompt is not None and len(keys_to_extract) > 0:
       found_values = {'resolution': resolution}
+      # print(f"debug generate_custom_name: --prefix: {prefix}")
       # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
+      # print(f"debug generate_custom_name: --prompt:")
+      # pprint.pprint(prompt)
       self.find_keys_recursively(prompt, keys_to_extract, found_values)
       for key in keys_to_extract:
         value = found_values.get(key)
         # print(f"debug generate_custom_name: ----key: {key}")
         # print(f"debug generate_custom_name: ----value: {value}")
         if value is not None:
-          if key == 'cfg' or key =='denoise':
-            try:
-              value = round(float(value), 1)
-            except ValueError:
-              pass
+          if isinstance(value, float):
+            value = round(float(value), 1)
         else:
-          # you can certainly add fixed strings as delimiters! Adding unknown key will make it a delimiter:
+          # key not found = it's a fixed string
           # print(f"debug generate_custom_name: ------value=key: {key}")
           value = key
         
@@ -193,7 +194,9 @@ class SaveImageExtended:
             custom_name += f"{value}"
           else:
             custom_name += f"{delimiter}{value}"
-          # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+        else:
+          custom_name += f"{delimiter}{value}"
+        # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
     return custom_name.strip(delimiter)
   
   
@@ -279,7 +282,7 @@ class SaveImageExtended:
         with open(json_file_path, 'r') as f:
           existing_data = json.load(f)
       except json.JSONDecodeError:
-        print(f"The file {json_file_path} is empty or malformed. Initializing with empty data.")
+        print(f"SaveImageExtended error: The file {json_file_path} is empty or malformed. Initializing with empty data.")
         existing_data = {}
     
     timestamp = datetime.now().strftime('%c')
@@ -370,7 +373,7 @@ class SaveImageExtended:
         self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
     
     except OSError as e:
-      print(f'An error occurred while creating the subfolder or saving the image: {e}')
+      print(f"SaveImageExtended error: An error occurred while creating the subfolder or saving the image: {e}")
     else:
       if not image_preview:
         results = list()
@@ -385,3 +388,132 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
   'SaveImageExtended': 'Save Image Extended',
 }
+
+
+# {'1': {'class_type': 'KSampler',
+       # 'inputs': {'cfg': 1.6,
+                  # 'denoise': 1.0,
+                  # 'latent_image': ['6', 0],
+                  # 'model': ['2', 0],
+                  # 'negative': ['5', 0],
+                  # 'positive': ['4', 0],
+                  # 'sampler_name': 'lcm',
+                  # 'scheduler': 'sgm_uniform',
+                  # 'seed': 233248937945750,
+                  # 'steps': 4}},
+ # '12': {'class_type': 'KSampler',
+        # 'inputs': {'cfg': 1.6,
+                   # 'denoise': 0.22,
+                   # 'model': ['2', 0],
+                   # 'negative': ['5', 0],
+                   # 'positive': ['4', 0],
+                   # 'sampler_name': 'lcm',
+                   # 'scheduler': 'sgm_uniform',
+                   # 'seed': 697295967325855,
+                   # 'steps': 4}},
+ # '13': {'class_type': 'VAEDecode',
+        # 'inputs': {'samples': ['23', 0], 'vae': ['3', 2]}},
+ # '2': {'class_type': 'LoraLoader',
+       # 'inputs': {'clip': ['9', 1],
+                  # 'lora_name': 'lcm\\SD1.5\\pytorch_lora_weights.safetensors',
+                  # 'model': ['9', 0],
+                  # 'strength_clip': 1.0,
+                  # 'strength_model': 1.0}},
+ # '23': {'class_type': 'KSampler',
+        # 'inputs': {'cfg': 1.6,
+                   # 'denoise': 0.1,
+                   # 'latent_image': ['45', 0],
+                   # 'model': ['2', 0],
+                   # 'negative': ['5', 0],
+                   # 'positive': ['4', 0],
+                   # 'sampler_name': 'lcm',
+                   # 'scheduler': 'sgm_uniform',
+                   # 'seed': 697295967325855,
+                   # 'steps': 4}},
+ # '25': {'class_type': 'VAEDecode',
+        # 'inputs': {'samples': ['12', 0], 'vae': ['3', 2]}},
+ # '3': {'class_type': 'CheckpointLoaderSimple',
+       # 'inputs': {'ckpt_name': 'epicrealism_naturalSinRC1VAE.safetensors'}},
+ # '35': {'class_type': 'SaveImageExtended',
+        # 'inputs': {'counter_digits': 4,
+                   # 'counter_position': 'last',
+                   # 'delimiter': '-',
+                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps, '
+                                    # 'upscale2',
+                   # 'filename_prefix': 'LCM',
+                   # 'foldername_keys': 'ckpt_name, ./upscale',
+                   # 'foldername_prefix': 'LCM-LoRA-basic/',
+                   # 'image_preview': True,
+                   # 'images': ['13', 0],
+                   # 'job_custom_text': '',
+                   # 'job_data_per_image': False,
+                   # 'one_counter_per_folder': True,
+                   # 'output_ext': '.png',
+                   # 'save_job_data': 'basic, models, sampler, prompt',
+                   # 'save_metadata': True}},
+ # '36': {'class_type': 'SaveImageExtended',
+        # 'inputs': {'counter_digits': 4,
+                   # 'counter_position': 'last',
+                   # 'delimiter': '-',
+                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps',
+                   # 'filename_prefix': 'LCM',
+                   # 'foldername_keys': 'ckpt_name',
+                   # 'foldername_prefix': 'LCM-LoRA-basic/',
+                   # 'image_preview': True,
+                   # 'images': ['7', 0],
+                   # 'job_custom_text': '',
+                   # 'job_data_per_image': False,
+                   # 'one_counter_per_folder': True,
+                   # 'output_ext': '.png',
+                   # 'save_job_data': 'basic, models, sampler, prompt',
+                   # 'save_metadata': True}},
+ # '37': {'class_type': 'SaveImageExtended',
+        # 'inputs': {'counter_digits': 4,
+                   # 'counter_position': 'last',
+                   # 'delimiter': '-',
+                   # 'filename_keys': 'sampler_name, scheduler, cfg, steps, '
+                                    # 'upscale1',
+                   # 'filename_prefix': 'LCM',
+                   # 'foldername_keys': 'ckpt_name, ./upscale',
+                   # 'foldername_prefix': 'LCM-LoRA-basic/',
+                   # 'image_preview': False,
+                   # 'images': ['25', 0],
+                   # 'job_custom_text': '',
+                   # 'job_data_per_image': False,
+                   # 'one_counter_per_folder': True,
+                   # 'output_ext': '.png',
+                   # 'save_job_data': 'basic, models, sampler, prompt',
+                   # 'save_metadata': True}},
+ # '4': {'class_type': 'CLIPTextEncode',
+       # 'inputs': {'clip': ['3', 1],
+                  # 'text': 'portrait of an old man, hires, masterpiece, full '
+                          # 'body, cinematic lighting'}},
+ # '45': {'class_type': 'ttN hiresfixScale',
+        # 'inputs': {'crop': 'disabled',
+                   # 'height': 1024,
+                   # 'image': ['25', 0],
+                   # 'image_output': 'Hide',
+                   # 'longer_side': 1024,
+                   # 'model_name': '4x-UltraSharp.pth',
+                   # 'output_latent': True,
+                   # 'percent': 40,
+                   # 'rescale': 'by percentage',
+                   # 'rescale_after_model': True,
+                   # 'rescale_method': 'nearest-exact',
+                   # 'save_prefix': 'ComfyUI',
+                   # 'vae': ['3', 2],
+                   # 'width': 1024}},
+ # '48': {'class_type': 'UpscaleModelLoader',
+        # 'inputs': {'model_name': '001_classicalSR_DF2K_s64w8_SwinIR-M_x4.pth'}},
+ # '5': {'class_type': 'CLIPTextEncode',
+       # 'inputs': {'clip': ['3', 1], 'text': 'lowres, worst quality'}},
+ # '6': {'class_type': 'EmptyLatentImage',
+       # 'inputs': {'batch_size': 1, 'height': 512, 'width': 512}},
+ # '7': {'class_type': 'VAEDecode',
+       # 'inputs': {'samples': ['1', 0], 'vae': ['3', 2]}},
+ # '9': {'class_type': 'LoraLoader',
+       # 'inputs': {'clip': ['3', 1],
+                  # 'lora_name': 'epiCRealismHelper.safetensors',
+                  # 'model': ['3', 0],
+                  # 'strength_clip': 1.0,
+                  # 'strength_model': 0.6}}}
