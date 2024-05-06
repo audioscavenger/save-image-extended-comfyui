@@ -16,30 +16,56 @@ import folder_paths
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
+  type = 'output'
+  counter_position = ['last', 'first']
+  extToRemove = ['.safetensors', '.ckpt', '.pt']
+  png_compress_level = 9
+  delimiter_max = 16
+
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
-    self.type = 'output'
     self.prefix_append = ''
   
+  
+  """
+  Return a dictionary which contains config for all input fields.
+  Some types (string): "MODEL", "VAE", "CLIP", "CONDITIONING", "LATENT", "IMAGE", "INT", "STRING", "FLOAT".
+  Input types "INT", "STRING" or "FLOAT" are special values for fields on the node.
+  The type can be a list for selection.
+  
+  Returns: `dict`:
+      - Key input_fields_group (`string`): Can be either required, hidden or optional. A node class must have property `required`
+      - Value input_fields (`dict`): Contains input fields config:
+          * Key field_name (`string`): Name of a entry-point method's argument
+          * Value field_config (`tuple`):
+              + First value is a string indicate the type of field or a list for selection.
+              + Secound value is a config for type "INT", "STRING" or "FLOAT".
+  """
   @classmethod
-  def INPUT_TYPES(s):
+  def INPUT_TYPES(self):
     return {
       'required': {
         'images': ('IMAGE', ),
-        'output_ext': (['.png', '.webp'], {'default': '.png'}),
-        'filename_prefix': ('STRING', {'default': 'myFile'}),
+        'filename_prefix': ('STRING', {'default': 'myFile', 'multiline': False}),
         'filename_keys': ('STRING', {'default': 'sampler_name, scheduler, cfg, steps', 'multiline': False}),
-        'foldername_prefix': ('STRING', {'default': 'myFolder/'}),
+        'foldername_prefix': ('STRING', {'default': 'saveExtended/', 'multiline': False}),
         'foldername_keys': ('STRING', {'default': 'ckpt_name, ./exampleSubfolder', 'multiline': False}),
-        'delimiter': ('STRING', {'default': '-'}),
-        'save_job_data': (['disabled', 'prompt', 'basic, prompt', 'basic, sampler, prompt', 'basic, models, sampler, prompt'],{'default': 'basic, prompt'}),
-        'job_data_per_image': (['disabled', 'enabled'],{'default': 'disabled'}),
+        'delimiter': ('STRING', {'default': '_', 'multiline': False}),
+        'save_job_data': (['disabled', 'prompt', 'basic, prompt', 'basic, sampler, prompt', 'basic, models, sampler, prompt'],{'default': 'basic, models, sampler, prompt'}),
+        'job_data_per_image': ([False, True], {'default': False}),
         'job_custom_text': ('STRING', {'default': '', 'multiline': False}),
-        'save_metadata': (['disabled', 'enabled'], {'default': 'enabled'}),
-        'counter_digits': ('STRING', {'default': 4}),
-        'counter_position': (['first', 'last'], {'default': 'last'}),
-        'one_counter_per_folder': (['disabled', 'enabled'], {'default': 'disabled'}),
-        'image_preview': (['disabled', 'enabled'], {'default': 'enabled'}),
+        'save_metadata': ([True, False], {'default': True}),
+        'counter_digits': ("INT", {
+          "default": 4, 
+          "min": 1, 
+          "max": 8, 
+          "step": 1,
+          "display": "silder"
+         }),
+        'counter_position': (['last', 'first'], {'default': 'last'}),
+        'one_counter_per_folder': ([True, False], {'default': True}),
+        'image_preview': ([True, False], {'default': True}),
+        'output_ext': (['.png'], {'default': '.png'}),
       },
       'optional': {
         'positive_text_opt': ('STRING', {'forceInput': True}),
@@ -53,6 +79,7 @@ class SaveImageExtended:
   OUTPUT_NODE = True
   CATEGORY = 'image'
   
+  
   def get_subfolder_path(self, image_path, output_path):
     image_path = Path(image_path).resolve()
     output_path = Path(output_path).resolve()
@@ -61,8 +88,9 @@ class SaveImageExtended:
     
     return str(subfolder_path)
   
+  
   # Get current counter number from file names
-  def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits, counter_position='last'):
+  def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits, counter_position='last', output_ext='.png'):
     counter = 1
     if not os.path.exists(folder_path):
       print(f"Folder {folder_path} does not exist, starting counter at 1.")
@@ -71,13 +99,11 @@ class SaveImageExtended:
     try:
       files = [f for f in os.listdir(folder_path) if f.endswith(output_ext)]
       if files:
+        if counter_position not in self.counter_position: counter_position = self.counter_position[0]
         if counter_position == 'last':
-          counters = [int(f[-(4 + counter_digits):-4]) if f[-(4 + counter_digits):-4].isdigit() else 0 for f in files if one_counter_per_folder == 'enabled' or f.startswith(filename_prefix)]
-        elif counter_position == 'first':
-          counters = [int(f[:counter_digits]) if f[:counter_digits].isdigit() else 0 for f in files if one_counter_per_folder == 'enabled' or f[counter_digits +1:].startswith(filename_prefix)]
+          counters = [int(f[-(4 + counter_digits):-4]) if f[-(4 + counter_digits):-4].isdigit() else 0 for f in files if one_counter_per_folder or f.startswith(filename_prefix)]
         else:
-          print(f"Invalid counter_position. Using 'last' as default.")
-          counters = [int(f[-(4 + counter_digits):-4]) if f[-(4 + counter_digits):-4].isdigit() else 0 for f in files if one_counter_per_folder == 'enabled' or f.startswith(filename_prefix)]
+          counters = [int(f[:counter_digits]) if f[:counter_digits].isdigit() else 0 for f in files if one_counter_per_folder or f[counter_digits +1:].startswith(filename_prefix)]
         
         if counters:
           counter = max(counters) + 1
@@ -87,25 +113,23 @@ class SaveImageExtended:
     
     return counter
   
-  @staticmethod
-  def find_keys_recursively(d, keys_to_find, found_values):
-    for key, value in d.items():
+  
+  def find_keys_recursively(self, obj, keys_to_find, found_values):
+    for key, value in obj.items():
       if key in keys_to_find:
         found_values[key] = value
       if isinstance(value, dict):
-        SaveImageExtended.find_keys_recursively(value, keys_to_find, found_values)
+        self.find_keys_recursively(value, keys_to_find, found_values)
   
-  @staticmethod
-  def remove_file_extension(value):
+  
+  def remove_file_extension(self, value):
     if isinstance(value, str):
-      value = value.removesuffix('.safetensors')
-      value = value.removesuffix('.ckpt')
-      value = value.removesuffix('.pt')
-    
+      for ext in self.extToRemove:
+        value = value.removesuffix(ext)
     return value
   
-  @staticmethod
-  def find_parameter_values(target_keys, obj, found_values=None):
+  
+  def find_parameter_values(self, target_keys, obj, found_values=None):
     if found_values is None:
       found_values = {}
     
@@ -119,15 +143,15 @@ class SaveImageExtended:
         # Match both formats: lora_xx and lora_name_x
         if re.match(r'lora(_name)?(_\d+)?', key):
           if value is not None:
-            value = SaveImageExtended.remove_file_extension(value)
+            value = self.remove_file_extension(value)
             loras_string += f'{value}, '
       
       # test if value is dict BEFORE cleaning up string value. come on, man...
       if isinstance(value, dict):
-        SaveImageExtended.find_parameter_values(target_keys, value, found_values)
+        self.find_parameter_values(target_keys, value, found_values)
       
       if key in target_keys:
-        value = SaveImageExtended.remove_file_extension(value)
+        value = self.remove_file_extension(value)
         found_values[key] = value
     
     if 'loras' in target_keys and loras_string:
@@ -139,17 +163,16 @@ class SaveImageExtended:
     return found_values
   
   
-  @staticmethod
-  def generate_custom_name(keys_to_extract, prefix, delimiter, resolution, prompt):
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, resolution, prompt):
     custom_name = prefix
     if prompt is not None and len(keys_to_extract) > 0:
       found_values = {'resolution': resolution}
-      print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
-      SaveImageExtended.find_keys_recursively(prompt, keys_to_extract, found_values)
+      # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
+      self.find_keys_recursively(prompt, keys_to_extract, found_values)
       for key in keys_to_extract:
         value = found_values.get(key)
-        print(f"debug generate_custom_name: ----key: {key}")
-        print(f"debug generate_custom_name: ----value: {value}")
+        # print(f"debug generate_custom_name: ----key: {key}")
+        # print(f"debug generate_custom_name: ----value: {value}")
         if value is not None:
           if key == 'cfg' or key =='denoise':
             try:
@@ -158,11 +181,11 @@ class SaveImageExtended:
               pass
         else:
           # you can certainly add fixed strings as delimiters! Adding unknown key will make it a delimiter:
-          print(f"debug generate_custom_name: ------value=key: {key}")
+          # print(f"debug generate_custom_name: ------value=key: {key}")
           value = key
         
         if (isinstance(value, str)):
-          value = SaveImageExtended.remove_file_extension(value)
+          value = self.remove_file_extension(value)
           # prefix and keys can very well be subfolders ending or starting with a /
           # print(f"debug generate_custom_name: ------value0=: {value}")
           if (value.startswith('./') or value.startswith('/') or custom_name.endswith('/')):
@@ -170,12 +193,11 @@ class SaveImageExtended:
             custom_name += f"{value}"
           else:
             custom_name += f"{delimiter}{value}"
-          print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+          # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
     return custom_name.strip(delimiter)
   
   
-  @staticmethod
-  def save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename):
+  def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename):
     prompt_keys_to_save = {}
     if 'basic' in save_job_data:
       if len(filename_prefix) > 0:
@@ -185,7 +207,7 @@ class SaveImageExtended:
       prompt_keys_to_save['custom_text'] = job_custom_text
     
     if 'models' in save_job_data:
-      models = SaveImageExtended.find_parameter_values(['ckpt_name', 'loras', 'vae_name', 'model_name'], prompt)
+      models = self.find_parameter_values(['ckpt_name', 'loras', 'vae_name', 'model_name'], prompt)
       if models.get('ckpt_name'):
         prompt_keys_to_save['checkpoint'] = models['ckpt_name']
       if models.get('loras'):
@@ -196,7 +218,7 @@ class SaveImageExtended:
         prompt_keys_to_save['upscale_model'] = models['model_name']
     
     if 'sampler' in save_job_data:
-      prompt_keys_to_save['sampler_parameters'] = SaveImageExtended.find_parameter_values(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'], prompt)
+      prompt_keys_to_save['sampler_parameters'] = self.find_parameter_values(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'], prompt)
     
     if 'prompt' in save_job_data:
       if positive_text_opt is not None:
@@ -284,12 +306,13 @@ class SaveImageExtended:
       job_data_per_image,
       job_custom_text,
       save_metadata,
-      filename_prefix='',
-      foldername_prefix='',
+      filename_prefix='myFile',
+      foldername_prefix='saveExtended/',
       extra_pnginfo=None,
       negative_text_opt=None,
       positive_text_opt=None,
-      prompt=None
+      prompt=None,
+      output_ext='.png'
     ):
     
     # Get set resolution value
@@ -297,27 +320,29 @@ class SaveImageExtended:
     img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
     resolution = f'{img.width}x{img.height}'
     
+    delimiter = delimiter[:self.delimiter_max] if len(delimiter) > self.delimiter_max else delimiter
     filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
     foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
-    custom_filename = SaveImageExtended.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
-    custom_foldername = SaveImageExtended.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
     
     # Create and save images
     try:
       full_output_folder, filename, _, _, custom_filename = folder_paths.get_save_image_path(custom_filename, self.output_dir, images[0].shape[1], images[0].shape[0])
       output_path = os.path.join(full_output_folder, custom_foldername)
-      print(f"debug save_images: full_output_folder={full_output_folder}")
-      print(f"debug save_images: custom_foldername={custom_foldername}")
-      print(f"debug save_images: output_path={output_path}")
+      # print(f"debug save_images: full_output_folder={full_output_folder}")
+      # print(f"debug save_images: custom_foldername={custom_foldername}")
+      # print(f"debug save_images: output_path={output_path}")
       os.makedirs(output_path, exist_ok=True)
-      counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position)
+      counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
+      # print(f"debug save_images: counter={counter}")
 
       results = list()
       for image in images:
         i = 255. * image.cpu().numpy()
         img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
         metadata = None
-        if save_metadata == 'enabled':
+        if save_metadata:
           metadata = PngInfo()
           if prompt is not None:
             metadata.add_text('prompt', json.dumps(prompt))
@@ -326,27 +351,28 @@ class SaveImageExtended:
               metadata.add_text(x, json.dumps(extra_pnginfo[x]))
         
         if counter_position == 'last':
-          file = f'{filename}{delimiter}{counter:0{counter_digits}}'+output_ext
+          file = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
         else:
-          file = f'{counter:0{counter_digits}}{delimiter}{filename}'+output_ext
+          file = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         
         image_path = os.path.join(output_path, file)
-        img.save(image_path, pnginfo=metadata, compress_level=4)
+        # print(f"debug save_images: image_path={image_path}")
+        img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
         
-        if save_job_data != 'disabled' and job_data_per_image =='enabled':
-          SaveImageExtended.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
+        if save_job_data != 'disabled' and job_data_per_image:
+          self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
         
         subfolder = self.get_subfolder_path(image_path, self.output_dir)
         results.append({ 'filename': file, 'subfolder': subfolder, 'type': self.type})
         counter += 1
       
-      if save_job_data != 'disabled' and job_data_per_image =='disabled':
-        SaveImageExtended.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
+      if save_job_data != 'disabled' and not job_data_per_image:
+        self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
     
     except OSError as e:
       print(f'An error occurred while creating the subfolder or saving the image: {e}')
     else:
-      if image_preview == 'disabled':
+      if not image_preview:
         results = list()
       return { 'ui': { 'images': results } }
 

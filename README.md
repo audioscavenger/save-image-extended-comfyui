@@ -1,7 +1,7 @@
 # Save Image Extended for ComfyUI
 
 <p align="center">
- <img src="assets/example.png" />
+ <img src="assets/save-image-extended-comfyui-example.png" />
 </p>
 
 Customize the information saved in file- and folder names. Use the values of sampler parameters as part of file or folder names. <br>Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
@@ -17,7 +17,6 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 
 ## Parameters / Usage
 
-- `output_ext` -  File extension: PNG by default, or WEBP.
 - `filename_prefix` -  String prefix added to files.
 - `filename_keys` - Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object they should work. The same applies to `foldername_keys`. 
 - `foldername_prefix` - String prefix added to folders.
@@ -31,10 +30,13 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 - `counter_position` - Image counter first or last in the filename.
 - `one_counter_per_folder` - Toggles the counter. Either one counter per folder, or resets when a parameter/prompt changes.
 - `image_preview` - Turns the image preview on and off.
+- `output_ext` -  File extension: PNG by default, or WEBP (coming soon).
 
 ## Node inputs
 
 - `images` - The generated images.
+
+Optional:
 - `positive_text_opt` - Optional string input for when using custom nodes for positive prompt text.
 - `negative_text_opt` - Optional string input for when using custom nodes for negative prompt text.
 
@@ -52,5 +54,20 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
  Happy saving!
 </p>
 
+## RoadMap
+
+I wont' promise anything, just like @thedyze did not promise anything when they released this custom noe, and disappeared for good 3 months later. However, I will accept PR and collabs. Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
+
+- [x] now accepts inexistant keys and use them as fixed strings
+- [x] now accepts inexistant keys with / and use them as subfolders
+- [x] delimiter is now whatever you want, free field. Limited to 16 characters tho
+- [x] all is instance methods, previously we had @staticmethods. Why? Don't know.
+- [x] check get_latest_counter: does it still work with subfolders? yessir
+- [ ] what is job_custom_text?
+- [ ] improve get_latest_counter: fails when user renames files: appends text after counter
+- [ ] integrate pngquant
+- [ ] integrate optipng
+- [ ] integrate avif? can it hold metadata?
+- [ ] integrate webp
 
 
