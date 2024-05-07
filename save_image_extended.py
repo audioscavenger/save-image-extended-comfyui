@@ -19,7 +19,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.41
+  version                 = 2.42
   type                    = 'output'
   
   png_compress_level      = 9
@@ -43,7 +43,7 @@ class SaveImageExtended:
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt']
   output_ext              = '.png'
-  output_exts             = ['.png', '.webp', '.jpg']
+  output_exts             = ['.png', '.png', '.webp', '.jpg']
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
@@ -126,11 +126,12 @@ class SaveImageExtended:
     
     try:
       files = [file for file in os.listdir(folder_path) if file.endswith(output_ext)]
+      extLen = len(output_ext)
       if files:
         if counter_position not in self.counter_positions: counter_position = self.counter_position
         if counter_position == 'last':
           # BUG: this works only if extension is 3 letters like png, this will break with webp and avif:
-          counters = [int(file[-(4 + counter_digits):-4]) if file[-(4 + counter_digits):-4].isdigit() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
+          counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdigit() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
         else:
           counters = [int(file[:counter_digits]) if file[:counter_digits].isdigit() else 0 for file in files if one_counter_per_folder or file[counter_digits +1:].startswith(filename_prefix)]
         
