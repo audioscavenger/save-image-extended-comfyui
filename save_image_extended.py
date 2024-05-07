@@ -2,8 +2,6 @@ import os
 import re
 import sys
 import json
-from PIL import Image, ExifTags
-from PIL.PngImagePlugin import PngInfo
 import numpy as np
 import locale
 from datetime import datetime
@@ -19,11 +17,11 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.42
+  version                 = 2.43
   type                    = 'output'
   
   png_compress_level      = 9
-  avif_quality            = 91
+  avif_quality            = 100
   webp_quality            = 91
   jpeg_quality            = 91
   
@@ -42,12 +40,26 @@ class SaveImageExtended:
   one_counter_per_folder  = True
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt']
-  output_ext              = '.png'
-  output_exts             = ['.png', '.png', '.webp', '.jpg']
+
+  print(f"\033[92m[save_image_extended]\033[0m version = {version}\033[0m")
+  try:
+    import pillow_avif
+    output_ext              = '.avif'
+    output_exts             = ['.avif', '.png', '.webp', '.jpg']
+    print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m") 
+  except ModuleNotFoundError:
+    output_ext              = '.png'
+    output_exts             = ['.png', '.webp', '.jpg']
+    print(f"\033[92m[save_image_extended] AVIF is not supported. To add it: \033[0m ip install pillow pillow-avif-plugin") 
+
+  # PIL must be loaded after pillow_avif
+  from PIL import Image, ExifTags
+  from PIL.PngImagePlugin import PngInfo
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
     self.prefix_append = ''
+    
   
   """
   Return a dictionary which contains config for all input fields.
@@ -421,6 +433,9 @@ class SaveImageExtended:
     
     # match is python 3.10+
     match output_ext:
+      case '.avif':
+        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+        kwargs["quality"] = self.avif_quality
       case '.webp':
         if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
         kwargs["lossless"] = False

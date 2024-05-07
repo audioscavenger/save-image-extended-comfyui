@@ -1,5 +1,5 @@
 # Save Image Extended for ComfyUI
-version = 2.42
+version = 2.43 - **AVIF** support!
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -110,10 +110,12 @@ However, I do provide a way to contact me, and will accept PR and collabs. Once 
 - [ ] what is jobs.json? History, alraight. What do you do with that? Can we disable it?
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
-- [ ] support for AVIF
+
+### release 2.43
+- [x] support for AVIF
 
 ### release 2.42
-- [ ] fixed counter for variable file extensions length
+- [x] fixed counter for variable file extensions length
 
 ### release 2.41
 - [x] bugfix WebP encoding: Comfy could partially read the prompt, but the way they implemented it was buggy. [PR fix submitted](https://github.com/comfyanonymous/ComfyUI/pull/3415).
