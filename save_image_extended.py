@@ -11,6 +11,15 @@ import pprint
 import piexif
 import piexif.helper
 
+try:
+  import pillow_avif
+except ModuleNotFoundError:
+  print(f"\033[92m[save_image_extended]\033[0m AVIF is not supported. To add it: pip install pillow pillow-avif-plugin\033[0m") 
+
+# PIL must be loaded after pillow_avif
+from PIL import Image, ExifTags
+from PIL.PngImagePlugin import PngInfo
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'comfy'))
 original_locale = locale.setlocale(locale.LC_TIME, '')
 
@@ -42,19 +51,13 @@ class SaveImageExtended:
   extToRemove             = ['.safetensors', '.ckpt', '.pt']
 
   print(f"\033[92m[save_image_extended]\033[0m version = {version}\033[0m")
-  try:
-    import pillow_avif
+  if pillow_avif not in sys.modules:
     output_ext              = '.avif'
     output_exts             = ['.avif', '.png', '.webp', '.jpg']
     print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m") 
-  except ModuleNotFoundError:
+  else:
     output_ext              = '.png'
     output_exts             = ['.png', '.webp', '.jpg']
-    print(f"\033[92m[save_image_extended] AVIF is not supported. To add it: \033[0m pip install pillow pillow-avif-plugin") 
-
-  # PIL must be loaded after pillow_avif
-  from PIL import Image, ExifTags
-  from PIL.PngImagePlugin import PngInfo
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
