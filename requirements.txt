@@ -1,0 +1,3 @@
+piexif
+pillow
+pillow-avif-plugin

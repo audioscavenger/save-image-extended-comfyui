@@ -26,6 +26,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
+  #Version: 2.43
   version                 = 2.43
   type                    = 'output'
   
@@ -50,7 +51,7 @@ class SaveImageExtended:
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt']
 
-  print(f"\033[92m[save_image_extended]\033[0m version = {version}\033[0m")
+  print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
   if pillow_avif not in sys.modules:
     output_ext              = '.avif'
     output_exts             = ['.avif', '.png', '.webp', '.jpg']
