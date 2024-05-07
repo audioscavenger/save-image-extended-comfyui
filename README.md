@@ -1,5 +1,5 @@
 # Save Image Extended for ComfyUI
-version = 2.4
+version = 2.41
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -8,7 +8,7 @@ version = 2.4
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_: 
-* Oh btw... also saves your output as **WebP** or **JPEG**... And yes the prompt is included :) But ComfyUI cannot load it yet...
+* Oh btw... also saves your output as **WebP** or **JPEG**... And yes the prompt is included :) ComfyUI can load it but a PR approval is needed.
 
 
 <br>
@@ -109,10 +109,12 @@ However, I do provide a way to contact me, and will accept PR and collabs. Once 
 - [ ] what is job_custom_text?
 - [ ] what is jobs.json? History, alraight. What do you do with that? Can we disable it?
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
-- [ ] integrate pngquant
-- [ ] integrate optipng
 - [ ] integrate avif? can it hold metadata?
 - [ ] offer to place the counter anywhere, as a key in filename_keys
+
+### release 2.41
+- [x] bugfix WebP encoding: Comfy could partially read the prompt, but the way they implemented it was buggy. [PR fix submitted](https://github.com/comfyanonymous/ComfyUI/pull/3415).
+- [x] WebP is indeed loaded properly like a PNG, if you apply the patch above to `pnginfo.js and `app.js`
 
 ### release 2.4
 - [x] integrate webp

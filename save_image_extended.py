@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 import folder_paths
 import pprint
+import piexif
+import piexif.helper
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'comfy'))
 original_locale = locale.setlocale(locale.LC_TIME, '')
@@ -17,7 +19,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.4
+  version                 = 2.41
   type                    = 'output'
   
   png_compress_level      = 9
@@ -360,14 +362,54 @@ class SaveImageExtended:
       metadata["prompt"] = prompt
     if extra_pnginfo is not None:
       metadata.update(extra_pnginfo)
-    exif = img.getexif()
-    exif[ExifTags.Base.UserComment] = json.dumps(metadata)
     
-    # For Comfy to load an image, it need a PNG tag at the root: Prompt={prompt}
-    # For AVIF WebP Jpeg, it's only Exif that's available... and UserComment is the best choice.
-    # Unfortunately, ComfyUI does not read any other tag... feel free to ask ComfyUI to add support for AVIF WebP Jpeg!
+    ## For Comfy to load an image, it need a PNG tag at the root: Prompt={prompt}
+    ## For AVIF WebP Jpeg, it's only Exif that's available... and UserComment is the best choice.
 
-    return exif.tobytes()
+    ## This method gives wrong results, as [ExifTool] will issue Warning: Invalid EXIF text encoding for UserComment
+    #   entryOffset 10
+    #   tag 37510
+    #   type 2
+    #   numValues 17699
+    #   valueOffset 26
+    ## Also when Comfy pnginfo.js reads it, all the quotes are escaped, making the prompt invalid
+    ## exif type is PIL.Image.Exif
+    exif = img.getexif()
+    dump = json.dumps(metadata)
+    # print(f"dump={dump}")   {"prompt": { .. }, "workflow": { .. }}
+    exif[ExifTags.Base.UserComment] = json.dumps(metadata)
+    # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
+    # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")      # type 1
+    # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="ascii")    # type 1
+    exif_dat = exif.tobytes()
+    
+    # https://piexif.readthedocs.io/en/latest/functions.html#load
+
+    # Both options exif_dict methods below result in type 4 data, read by parseExifData > parseIFD > readInt in pnginfo.js -> not processed
+    #   entryOffset 10
+    #   tag 34665
+    #   type 4
+    #   numValues 1
+    #   valueOffset 26
+    # Also, piexif.dump(exif_dict) already is a bytes object.
+    # Also, 34665 if the correct tag for IFD according to https://pillow.readthedocs.io/en/stable/reference/ExifTags.html
+    # from PIL.ExifTags import IFD
+    # IFD.Exif.value -> 34665
+
+    # https://stackoverflow.com/questions/61626067/python-add-arbitrary-exif-data-to-image-usercomment-field
+    # exif_ifd = {piexif.ExifIFD.UserComment: json.dumps(metadata).encode()}
+    # exif_dict = {"0th":{}, "Exif":exif_ifd, "GPS":{}, "1st":{}, "thumbnail":None}
+    # exif_dat = piexif.dump(exif_dict)
+
+    # https://stackoverflow.com/questions/8586940/writing-complex-custom-metadata-on-images-through-python
+    # This seems like the right encoding, exiftool returns no error
+    # exif_dict = {"0th":{}, "Exif":{}, "GPS":{}, "1st":{}, "thumbnail":None}
+    # exif_dict["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")
+    # exif_dict["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="ascii")
+    # exif_dict["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")
+    # exif_dat = piexif.dump(exif_dict)
+
+    return exif_dat
   
   
   def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None):
