@@ -20,11 +20,19 @@ version = 2.43 - **AVIF** support!
 
 *Reboot by AudioscavengeR since 2024-05-05, original idea from [@thedyze](https://github.com/thedyze/save-image-extended-comfyui)*
 
- ## Installation
+## Installation
+Requisites:
+- python 10.6
+- modules pillow pillow-avif-plugin
+
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
 2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo.
 ```
 git clone https://github.com/audioscavenger/save-image-extended-comfyui
+```
+3. for AVIF support: pip install pillow pillow-avif-plugin
+```
+pip install pillow pillow-avif-plugin
 ```
 
 ## Parameters / Usage

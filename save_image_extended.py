@@ -50,7 +50,7 @@ class SaveImageExtended:
   except ModuleNotFoundError:
     output_ext              = '.png'
     output_exts             = ['.png', '.webp', '.jpg']
-    print(f"\033[92m[save_image_extended] AVIF is not supported. To add it: \033[0m ip install pillow pillow-avif-plugin") 
+    print(f"\033[92m[save_image_extended] AVIF is not supported. To add it: \033[0m pip install pillow pillow-avif-plugin") 
 
   # PIL must be loaded after pillow_avif
   from PIL import Image, ExifTags
