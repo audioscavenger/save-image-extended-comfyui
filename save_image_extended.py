@@ -31,7 +31,7 @@ class SaveImageExtended:
   type                    = 'output'
   
   png_compress_level      = 9
-  avif_quality            = 100
+  avif_quality            = 91
   webp_quality            = 91
   jpeg_quality            = 91
   
@@ -55,7 +55,7 @@ class SaveImageExtended:
   if pillow_avif not in sys.modules:
     output_ext              = '.avif'
     output_exts             = ['.avif', '.png', '.webp', '.jpg']
-    print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m") 
+    print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m\n") 
   else:
     output_ext              = '.png'
     output_exts             = ['.png', '.webp', '.jpg']
@@ -221,50 +221,69 @@ class SaveImageExtended:
       #   'inputs': {'cfg': 1.6, 
       #     'denoise': 1.0, ...
       for key in keys_to_extract:
-        node, nodeKey = None, None
-        splitKey = key.split('.')
-        if len(splitKey) > 1:
-          node, nodeKey = splitKey[0], splitKey[1]
-          if node in prompt:
-            # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
-            # splitKey[0] = #node number found in prompt, we will recurse only in that node:
-            value = self.find_keys_recursively(prompt[node], [nodeKey], found_values)
-          else:
-            # if splitKey[0] = #node number not found in prompt, we will just inform the user
-            print(f"SaveImageExtended info: node #{node} not found")
+        value = None
+        
+        # check if this is a subfolder: starts with ./ or /, can also end with /
+        if '/' in key:
+          value = key
         else:
-          # from now on we will wotk with nodeKey, that will save us tons of if then else
-          nodeKey = key
-          # we just try and find the last value for that key, whichever node it's in:
-          value = self.find_keys_recursively(prompt, [nodeKey], found_values)
+          node, nodeKey = None, None
+          splitKey = key.split('.')
+          # we also exclude cases line subfolders: "./folder" - or typos like "smth."
+          if len(splitKey) > 1 and splitKey[0] is not None and splitKey[1] is not None:
+            # if you enter a key like 1.sampler, we will look for sampler value in node #1
+            node, nodeKey = splitKey[0], splitKey[1]
+            if node in prompt:
+              # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
+              # splitKey[0] = #node number found in prompt, we will recurse only in that node:
+              self.find_keys_recursively(prompt[node], [nodeKey], found_values)
+            # else:
+              # # if splitKey[0] = #node number not found in prompt, we will just inform the user
+              # print(f"SaveImageExtended info: node #{node} not found")
+          else:
+            # from now on we will work with nodeKey, that will save us tons of if-then-else
+            # nodeKey could also be = to ".smth" but that's user typo, we cannot test all scenarios
+            nodeKey = key
+            
+            # we just try and find the last value for that key, whichever node it's in:
+            self.find_keys_recursively(prompt, [nodeKey], found_values)
         
         # at this point we have a nodeKey but maybe no value
-        # now we analyze each value found and format them accordingly:
-        value = found_values[nodeKey]
-        # print(f"debug generate_custom_name: ----key: {nodeKey}")
-        # print(f"debug generate_custom_name: ----value: {value}")
-
+        if value is None: value = found_values[nodeKey]
+        # at this point, value is neither a widget value, nor a folder, must be a simple string
         if value is None:
           # key not found = it's a fixed string
-          # print(f"debug generate_custom_name: ------value=key: {nodeKey}")
           value = nodeKey
         
+        # now we analyze each value found and format them accordingly:
+        # print(f"debug generate_custom_name: ----key: {nodeKey}")
+        # print(f"debug generate_custom_name: ----value: {value}")
         if isinstance(value, float):
           value = round(float(value), 1)
         
         # now we build the custom_name:
         if isinstance(value, str):
-          value = self.cleanup_fileName(value)
           # prefix and keys can very well be subfolders ending or starting with a /
-          if (value.startswith('./') or value.startswith('/') or custom_name.endswith('/')):
+          if custom_name.endswith('/'):
             # for subfolders, do not start filename with a delimiter...
-            custom_name += f"{value}"
+            delim = ''
           else:
-            custom_name += f"{delimiter}{value}"
+            delim = delimiter
+          
+          # for subfolders, do not clean the filename...
+          if not (value.startswith('/') or value.startswith('./')):
+            # print(f"debug generate_custom_name: ---------: cleanup_fileName")
+            value = self.cleanup_fileName(value)
+          
+          # print(f"debug generate_custom_name: ---------: folder")
+          custom_name += f"{value}"
+        
         else:
           # could be int or float, can't be anything else
+          # print(f"debug generate_custom_name: ---------: int")
           custom_name += f"{delimiter}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+      # for each key
     return custom_name.strip(delimiter)
   
   
