@@ -30,8 +30,8 @@ class SaveImageExtended:
   type                    = 'output'
   
   png_compress_level      = 9
-  avif_quality            = 91
-  webp_quality            = 91
+  avif_quality            = 60
+  webp_quality            = 75
   jpeg_quality            = 91
   
   filename_prefix         = 'ComfyUI'
