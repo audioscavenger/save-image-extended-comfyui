@@ -22,6 +22,8 @@
 
 ## Installation
 ### Requirements:
+There is a requirements.txt that will take care of that, but just in case:
+
 - python 10.6
 - piexif
 - pillow
@@ -75,11 +77,15 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-* WebP and JPEG quality are fixed at 91.
+Quality and compression settings:
+
+* AVIF quality is fixed at 50.
+* WebP quality is fixed at 75.
+* JPEG quality is fixed at 91.
 * PNG is maxed compressed (9)
 
 #
-About extensions WebP AVIF JPEG: ComfyUI cannot load it atm... Feel free to ask ComfyUI team to add support for AVIF WebP Jpeg!
+About extensions WebP AVIF JPEG: ComfyUI cannot load it atm... Feel free to ask ComfyUI team to add support for AVIF/WebP/jpeg!
 
 The prompt is included under the **EXIF** tag `UserComment` (IFD0 / 0x9286) as defined [here](https://exiftool.org/TagNames/EXIF.html).
 It is saved in this form: `UserComment = {"prompt": {"1": {"inputs": {...}}}}`.
@@ -112,20 +118,24 @@ jobs.json sample:
 
 ## RoadMap
 
-I won't promise anything, just like @thedyze did not promise anything when they released this custom node. Then disappeared for good 3 months later. That's fine, I do that too. 
+I won't promise anything, just like @thedyze did not promise anything when they released this custom node. 
+Then disappeared for good 3 months later. That's fine, I do that too. 
 
-However, I do provide a way to contact me, and will accept PR and collabs. Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
+However, I do provide a way to contact me, and will accept PR and collabs. 
+Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
-- [ ] save_job_to_json is pretty much useless actually, since it only saves the last value found for each node
-- [ ] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder
-- [ ] what is job_custom_text?
-- [ ] what is jobs.json? History, alraight. What do you do with that? Can we disable it?
+- [ ] offer quality setting in the node?
+- [ ] remove save_job_to_json? thisis pretty much useless actually, since it only saves the last value found for each node.
+- [ ] remove job_custom_text? what is this for?
+- [ ] remove jobs.json? jobs history, alright. What do you do with that? images contain the prompt, what is this for?
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
+- [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
 
 ### release 2.44
 - so many bugfixes
 - complete rework of generate_custom_name to handle ALL the possible scenarios
+- [x] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder
 
 ### release 2.43
 - [x] support for AVIF
