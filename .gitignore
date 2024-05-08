@@ -2,6 +2,7 @@ backup/
 *.7z
 *.zip
 gitsync*
+commit.*
 *.url
 *.lnk
 desktop.ini
