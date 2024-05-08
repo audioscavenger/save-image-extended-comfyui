@@ -1,0 +1,7 @@
+release 2.44 worky
+- final bugfixes and working loop for filename building, tested for all case scenarios
+    	modified:   README.md
+    	modified:   commit.gitsync.2.43.txt
+    	modified:   save_image_extended.py
+	modified:   save_image_extended.py
+	modified:   commit.gitsync.2.44.txt

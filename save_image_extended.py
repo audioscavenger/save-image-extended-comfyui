@@ -48,7 +48,7 @@ class SaveImageExtended:
   counter_positions       = ['last', 'first']
   one_counter_per_folder  = True
   image_preview           = True
-  extToRemove             = ['.safetensors', '.ckpt', '.pt']
+  extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
 
   print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
   if pillow_avif not in sys.modules:
@@ -159,7 +159,8 @@ class SaveImageExtended:
     return counter
   
   
-  def find_keys_recursively(self, prompt, keys_to_find, found_values):
+  # find_keys_recursively is a self-updating recursive method, that will update the dict found_values
+  def find_keys_recursively(self, prompt={}, keys_to_find=[], found_values={}):
     for key, value in prompt.items():
       if key in keys_to_find:
         found_values[key] = value
@@ -167,15 +168,17 @@ class SaveImageExtended:
         self.find_keys_recursively(value, keys_to_find, found_values)
   
   
-  def cleanup_fileName(self, value):
-    if isinstance(value, str):
+  def cleanup_fileName(self, file='', extToRemove=extToRemove):
+    if isinstance(file, str):
       # takes care of all the possible safetensor extensions under the sun
-      value = os.path.splitext(os.path.basename(value))[0]
-    return value
+      # cannot do that... maybe the user want a string.string fixed value to use, that does not end with extToRemove
+      # file = os.path.splitext(os.path.basename(file))[0]
+      for ext in extToRemove: file = file.removesuffix(ext)
+    return file
   
   
   # this method pretty much does the same as find_keys_recursively, except it's for job.json export
-  def find_parameter_values(self, target_keys, prompt, found_values={}):
+  def find_parameter_values(self, target_keys, prompt={}, found_values={}):
     loras_string = ''
     for key, value in prompt.items():
       # print(f"debug find_parameter_values: key={key} value={value}")
@@ -253,12 +256,12 @@ class SaveImageExtended:
                   self.find_keys_recursively(prompt, [nodeKey], found_values)
               else:
                 # key is in the form string.string = fixed string
-                value = key
+                value = self.cleanup_fileName(key)
             else:
-              # key is in the form .string or string.
+              # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is
               value = key
           else:
-            # nodeKey is not a folder, has no dot, could be a valid key to find or a fixed string
+            # nodeKey is not a folder, has no dot, could be a valid key to find, could be a fixed string - keep as is
             nodeKey = key
             self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
@@ -272,12 +275,13 @@ class SaveImageExtended:
             if nodeKey in found_values: value = found_values[nodeKey]
             if value is None:
               value = nodeKey
+            else:
+              value = self.cleanup_fileName(value)
         
         # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
         # print(f"debug generate_custom_name: ----value: {value}")
-        if isinstance(value, float):
-          value = round(float(value), 1)
+        delim = delimiter
         
         # now we build the custom_name:
         if isinstance(value, str):
@@ -286,20 +290,18 @@ class SaveImageExtended:
             # for subfolders, do not start filename with a delimiter...
             delim = ''
           else:
-            delim = delimiter
-          
-          # for subfolders, do not clean the filename...
-          if not (value.startswith('/') or value.startswith('./')):
-            # print(f"debug generate_custom_name: ---------: cleanup_fileName")
-            value = self.cleanup_fileName(value)
-          
-          # print(f"debug generate_custom_name: ---------: folder")
-          custom_name += f"{value}"
+            # for subfolders in keys, do not clean the filename...
+            if '/' in value and not value.endswith('/'):
+              # print(f"debug generate_custom_name: ---------: folder")
+              delim= ''
+          # ".string" case
+          if value.startswith('.'):
+            delim = ''
         
-        else:
-          # could be int or float, can't be anything else
-          # print(f"debug generate_custom_name: ---------: int")
-          custom_name += f"{delimiter}{value}"
+        if isinstance(value, float):
+          value = round(float(value), 1)
+        
+        custom_name += f"{delim}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
       # for each key
     return custom_name.strip(delimiter).strip('.').strip('/').strip(delimiter)
