@@ -26,8 +26,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  #Version: 2.43
-  version                 = 2.43
+  version                 = 2.44
   type                    = 'output'
   
   png_compress_level      = 9
@@ -35,10 +34,10 @@ class SaveImageExtended:
   webp_quality            = 91
   jpeg_quality            = 91
   
-  filename_prefix         = 'myFile'
+  filename_prefix         = 'ComfyUI'
   filename_keys           = 'sampler_name, scheduler, cfg, steps'
-  foldername_prefix       = 'myFolder'
-  foldername_keys         = 'ckpt_name, ./exampleSubfolder'
+  foldername_prefix       = ''
+  foldername_keys         = 'ckpt_name, ./subfolder'
   delimiter               = '_'
   save_job_data           = 'basic, models, sampler, prompt'
   job_data_per_image      = False
@@ -95,7 +94,7 @@ class SaveImageExtended:
           'basic, prompt', 
           'basic, sampler, prompt', 
           'basic, models, sampler, prompt'
-        ],{'default': self.save_job_data}),
+        ], {'default': self.save_job_data}),
         'job_data_per_image': ([False, True], {'default': self.job_data_per_image}),
         'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False}),
         'save_metadata': ([True, False], {'default': self.save_metadata}),
@@ -147,9 +146,9 @@ class SaveImageExtended:
         if counter_position not in self.counter_positions: counter_position = self.counter_position
         if counter_position == 'last':
           # BUG: this works only if extension is 3 letters like png, this will break with webp and avif:
-          counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdigit() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
+          counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdecimal() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
         else:
-          counters = [int(file[:counter_digits]) if file[:counter_digits].isdigit() else 0 for file in files if one_counter_per_folder or file[counter_digits +1:].startswith(filename_prefix)]
+          counters = [int(file[:counter_digits]) if file[:counter_digits].isdecimal() else 0 for file in files if one_counter_per_folder or file[counter_digits +1:].startswith(filename_prefix)]
         
         if counters:
           counter = max(counters) + 1
@@ -204,9 +203,15 @@ class SaveImageExtended:
     return found_values
   
   
-  def generate_custom_name(self, keys_to_extract, prefix, delimiter, resolution, prompt):
+  # String Type                 Example   isdecimal() isdigit() isnumeric()
+  # --------------------------- --------- ----------- --------- -----------
+  # Base 10 Numbers             '0123'    True        True      True
+  # Fractions and Superscripts  '⅔','2²'  False       True      True
+  # Roman Numerals              'ↁ'       False       False     True
+  # --------------------------- --------- ----------- --------- -----------
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt):
     custom_name = prefix
-    if prompt is not None and len(keys_to_extract) > 0:
+    if prompt is not None and keys_to_extract != ['']:
       found_values = {}
       # print(f"debug generate_custom_name: --prefix: {prefix}")
       # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
@@ -222,41 +227,54 @@ class SaveImageExtended:
       #     'denoise': 1.0, ...
       for key in keys_to_extract:
         value = None
+        node, nodeKey = None, None
         
         # check if this is a subfolder: starts with ./ or /, can also end with /
         if '/' in key:
+          # key is a fsubfolder
           value = key
         else:
-          node, nodeKey = None, None
           splitKey = key.split('.')
-          # we also exclude cases line subfolders: "./folder" - or typos like "smth."
-          if len(splitKey) > 1 and splitKey[0] is not None and splitKey[1] is not None:
-            # if you enter a key like 1.sampler, we will look for sampler value in node #1
-            node, nodeKey = splitKey[0], splitKey[1]
-            if node in prompt:
-              # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
-              # splitKey[0] = #node number found in prompt, we will recurse only in that node:
-              self.find_keys_recursively(prompt[node], [nodeKey], found_values)
-            # else:
-              # # if splitKey[0] = #node number not found in prompt, we will just inform the user
-              # print(f"SaveImageExtended info: node #{node} not found")
+          # we also exclude cases like "string." or ".string" or "string.string"
+          if len(splitKey) > 1:
+            # key has the form string.string
+            if '' not in splitKey:
+              # key has the form string.string
+              if splitKey[0].isdecimal():
+                # key has the form num.widget_name like 123.widget_name, we will then look for widget_name value in node #123
+                node, nodeKey = splitKey[0], splitKey[1]
+                if node in prompt:
+                  # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
+                  # splitKey[0] = #node number found in prompt, we will recurse only in that node:
+                  self.find_keys_recursively(prompt[node], [nodeKey], found_values)
+                else:
+                  # if splitKey[0] = #num node not found in prompt; #num could have changed or user made a typo
+                  print(f"SaveImageExtended info: node #{node} not found")
+                  self.find_keys_recursively(prompt, [nodeKey], found_values)
+              else:
+                # key is in the form string.string = fixed string
+                value = key
+            else:
+              # key is in the form .string or string.
+              value = key
           else:
-            # from now on we will work with nodeKey, that will save us tons of if-then-else
-            # nodeKey could also be = to ".smth" but that's user typo, we cannot test all scenarios
+            # nodeKey is not a folder, has no dot, could be a valid key to find or a fixed string
             nodeKey = key
-            
-            # we just try and find the last value for that key, whichever node it's in:
             self.find_keys_recursively(prompt, [nodeKey], found_values)
+          # is key num.widget_name
+        # is key subfolder
         
-        # at this point we have a nodeKey but maybe no value
-        if value is None: value = found_values[nodeKey]
-        # at this point, value is neither a widget value, nor a folder, must be a simple string
+        # at this point we have a nodeKey, or a value, or both
+        # print(f"debug generate_custom_name: ----key:   {nodeKey}")
+        # print(f"debug generate_custom_name: ----value: {value}")
         if value is None:
-          # key not found = it's a fixed string
-          value = nodeKey
+          if nodeKey is not None:
+            if nodeKey in found_values: value = found_values[nodeKey]
+            if value is None:
+              value = nodeKey
         
+        # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
-        # print(f"debug generate_custom_name: ----key: {nodeKey}")
         # print(f"debug generate_custom_name: ----value: {value}")
         if isinstance(value, float):
           value = round(float(value), 1)
@@ -284,7 +302,7 @@ class SaveImageExtended:
           custom_name += f"{delimiter}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
       # for each key
-    return custom_name.strip(delimiter)
+    return custom_name.strip(delimiter).strip('.').strip('/').strip(delimiter)
   
   
   def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename):
@@ -478,38 +496,52 @@ class SaveImageExtended:
 # class SaveImageExtended -------------------------------------------------------------------------------
 
 
+  # node will never return None values, except for optional input. Impossible.
   def save_images(self,
-      counter_digits,
-      counter_position,
-      one_counter_per_folder,
-      delimiter,
-      filename_keys,
-      foldername_keys,
       images,
-      image_preview,
+      filename_prefix,
+      filename_keys,
+      foldername_prefix,
+      foldername_keys,
+      delimiter,
       save_job_data,
       job_data_per_image,
       job_custom_text,
       save_metadata,
-      filename_prefix=filename_prefix,
-      foldername_prefix=foldername_prefix,
-      extra_pnginfo=None,
+      counter_digits,
+      counter_position,
+      one_counter_per_folder,
+      image_preview,
+      output_ext,
       negative_text_opt=None,
       positive_text_opt=None,
+      extra_pnginfo=None,
       prompt=None,
-      output_ext=output_ext
     ):
+    
+    # print(f"filename_prefix = x{filename_prefix}x")
+    # print(f"filename_keys = x{filename_keys}x")
+    # print(f"foldername_prefix = x{foldername_prefix}x")
+    # print(f"foldername_keys = x{foldername_keys}x")
+    # print(f"delimiter = x{delimiter}x")
+    # print(f"save_job_data = x{save_job_data}x")
+    # print(f"job_data_per_image = x{job_data_per_image}x")
+    # print(f"output_ext = x{output_ext}x")
+
+    # apply default values: we replicate the default save image box
+    if not filename_prefix and not filename_keys: filename_prefix=self.filename_prefix
+    if delimiter: delimiter = delimiter[0]
+    
+    filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
+    foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
+    
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt)
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt)
     
     # Get set resolution value
     i = 255. * images[0].cpu().numpy()
     img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
     resolution = f'{img.width}x{img.height}'
-    
-    delimiter = delimiter[0]
-    filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
-    foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, resolution, prompt)
-    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, resolution, prompt)
     
     # Create folders, count images, save images
     try:
