@@ -26,7 +26,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.44
+  version                 = 2.45
   type                    = 'output'
   
   png_compress_level      = 9
@@ -593,7 +593,7 @@ NODE_CLASS_MAPPINGS = {
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-  'SaveImageExtended': 'Save Image Extended',
+  'SaveImageExtended': '💾 Save Image Extended',
 }
 
 

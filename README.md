@@ -1,4 +1,4 @@
-# Save Image Extended for ComfyUI
+# 💾 Save Image Extended for ComfyUI
 **AVIF** support!
 
 <p align="center">
@@ -34,7 +34,7 @@ pip install piexif pillow pillow-avif-plugin
 ```
 
 
-### Installation
+### Manual Download
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
 2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo.
 ```
@@ -79,7 +79,7 @@ Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, C
 #
 Quality and compression settings:
 
-* AVIF quality is fixed at 50.
+* AVIF quality is fixed at 60.
 * WebP quality is fixed at 75.
 * JPEG quality is fixed at 91.
 * PNG is maxed compressed (9)
@@ -124,6 +124,8 @@ Then disappeared for good 3 months later. That's fine, I do that too.
 However, I do provide a way to contact me, and will accept PR and collabs. 
 Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
+- [ ] ComfyRoll has icons in the titles, these are just utf8 emojis but I want that too!
+- [ ] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt and see if that works better with Comfy!
 - [ ] offer quality setting in the node?
 - [ ] remove save_job_to_json? thisis pretty much useless actually, since it only saves the last value found for each node.
 - [ ] remove job_custom_text? what is this for?
@@ -131,6 +133,9 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.45 💾
+- added 💾 in the name
 
 ### release 2.44
 - so many bugfixes
