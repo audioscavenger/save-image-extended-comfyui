@@ -59,7 +59,7 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 | `image_preview` | Turns the image preview on and off. |
 | `output_ext` |  File extension: PNG by default, or WEBP (coming soon). |
 
-Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings.
+Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings: if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
 
 ## Node inputs
 
@@ -102,15 +102,15 @@ You can retrieve the prompt manually with [exiftool](https://exiftool.org/), her
 Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node already adds JPEG and WebP.
 
 #
-You asked for it... Now you can select which node to get the widget values from! Formerly, this custom node would simply return the last value found: useles if you have many Ksamplers...
-Make sure you enable the badge IDs to benefit from this:
+You asked for it... Now you can select which node to get the widget values from! Formerly, this custom node would simply return the last value found: useless if you have multiple same nodes...
+To see node numbers in the UI, **enable the badge IDs**:
 <br>
 <p align="center">
  <img src="assets/ComfyUI-enable-badge-ids.png" />
 </p>
 
 #
-jobs.json sample:
+jobs.json sample: always generated and appended, not sure what it can be used for.
 <br>
 <p align="center">
  <img src="assets/save-image-extended-comfyui-jobs-example.png" />
@@ -121,10 +121,7 @@ jobs.json sample:
 
 ## RoadMap
 
-I won't promise anything, just like @thedyze did not promise anything when they released this custom node. 
-Then disappeared for good 3 months later. That's fine, I do that too somtimes :)
-
-However, I do provide a way to contact me, and will accept PR and collabs. 
+I won't promise you the moon, but since I use this node myself, I will maintain it as much as I can. I do provide a way to contact me, and will accept PR and collabs. 
 Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
 - [ ] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt and see if that works better with Comfy!
@@ -138,7 +135,7 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 
 ### release 2.46 💾
 - bug discovered with *rgthree's Ksampler Config*: using `steps_total` as an input to a Ksampler, will issue the index of the output, instead of the steps value ("\[nodeNum, 0]" instead of steps value). FIX: use `steps_total` instead of `steps`!
-- uncommented \_\_all\_\_ in init.py
+- uncommented `__all__` in init.py
 - potential bugfix in splitKey, `len(splitKey) = 2` to identify actual "node.widget" format
 
 ### release 2.45 💾
@@ -147,10 +144,10 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 ### release 2.44
 - so many bugfixes
 - complete rework of generate_custom_name to handle ALL the possible scenarios
-- [x] bugfix: when using /name in foldername_keys, Comfy thinks you want to save outside the output folder
+- [x] bugfix: when using `/name` in foldername_keys, Comfy thinks you want to save outside the output folder
 
 ### release 2.43
-- [x] support for AVIF
+- [x] support for **AVIF**
 - [x] added requirements.txt
 
 ### release 2.42
@@ -161,8 +158,8 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 - [x] WebP is indeed loaded properly like a PNG, if you apply the patch above to `pnginfo.js and `app.js`
 
 ### release 2.4
-- [x] integrate webp
-- [x] integrate jpg
+- [x] integrate **webp**
+- [x] integrate **jpeg**
 
 ### release 2.3
 - [x] for each keys, we return only the last value found in the prompt. Not the last Ksampler. Impossible to know which one is the last. Therefore, simply use this syntax: number.widget_name

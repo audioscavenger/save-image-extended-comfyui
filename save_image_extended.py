@@ -136,7 +136,7 @@ class SaveImageExtended:
   def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits=counter_digits, counter_position=counter_position, output_ext=output_ext):
     counter = 1
     if not os.path.exists(folder_path):
-      print(f"SaveImageExtended error: Folder {folder_path} does not exist, starting counter at 1.")
+      print(f"SaveImageExtended {version} error: Folder {folder_path} does not exist, starting counter at 1.")
       return counter
     
     try:
@@ -154,7 +154,7 @@ class SaveImageExtended:
           counter = max(counters) + 1
     
     except Exception as e:
-      print(f"SaveImageExtended error: An error occurred while finding the latest counter: {e}")
+      print(f"SaveImageExtended {version} error: An error occurred while finding the latest counter: {e}")
     
     return counter
   
@@ -388,7 +388,7 @@ class SaveImageExtended:
         with open(json_file_path, 'r') as f:
           existing_data = json.load(f)
       except json.JSONDecodeError:
-        print(f"SaveImageExtended error: The file {json_file_path} is empty or malformed. Initializing with empty data.")
+        print(f"SaveImageExtended {version} error: The file {json_file_path} is empty or malformed. Initializing with empty data.")
         existing_data = {}
     
     timestamp = datetime.now().strftime('%c')
@@ -582,7 +582,7 @@ class SaveImageExtended:
         self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
     
     except OSError as e:
-      print(f"SaveImageExtended error: An error occurred while creating the subfolder or saving the image: {e}")
+      print(f"SaveImageExtended {version} error: An error occurred while creating the subfolder or saving the image: {e}")
     else:
       if not image_preview:
         results = list()
