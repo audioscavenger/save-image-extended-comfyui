@@ -26,7 +26,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.45
+  version                 = 2.46
   type                    = 'output'
   
   png_compress_level      = 9
@@ -219,7 +219,6 @@ class SaveImageExtended:
       # print(f"debug generate_custom_name: --prefix: {prefix}")
       # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
       # print(f"debug generate_custom_name: --prompt:")
-      # pprint.pprint(prompt)
       
       # now separating numbered keys from non-numbered keys:
       #   37.ckpt_name = i want the ckpt_name from node #37
@@ -234,12 +233,12 @@ class SaveImageExtended:
         
         # check if this is a subfolder: starts with ./ or /, can also end with /
         if '/' in key:
-          # key is a fsubfolder
+          # key is a subfolder: ./subfolder or ../subfolder or /subfolder
           value = key
         else:
           splitKey = key.split('.')
-          # we also exclude cases like "string." or ".string" or "string.string"
-          if len(splitKey) > 1:
+          # we also exclude cases like "..string" or "sting.string.x" etc
+          if len(splitKey) == 2:
             # key has the form string.string
             if '' not in splitKey:
               # key has the form string.string
@@ -258,10 +257,10 @@ class SaveImageExtended:
                 # key is in the form string.string = fixed string
                 value = self.cleanup_fileName(key)
             else:
-              # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is
+              # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is, maybe it's a separator
               value = key
           else:
-            # nodeKey is not a folder, has no dot, could be a valid key to find, could be a fixed string - keep as is
+            # nodeKey is not a folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
             nodeKey = key
             self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
@@ -537,6 +536,9 @@ class SaveImageExtended:
     filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
     foldername_keys_to_extract = [item.strip() for item in foldername_keys.split(',')]
     
+    ################################## UNCOMMENT HERE TO SEE THE ENTIRE PROMPT
+    # pprint.pprint(prompt)
+    ##########################################################################
     custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt)
     custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt)
     

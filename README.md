@@ -1,5 +1,5 @@
 # 💾 Save Image Extended for ComfyUI
-**AVIF** support!
+**AVIF** and **WebP** support!
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -8,7 +8,7 @@
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_: 
-* Oh btw... also saves your output as **WebP** or **JPEG**... And yes the prompt is included :) ComfyUI can load it but a PR approval is needed.
+* Oh btw... also saves your output as **WebP** / **JPEG** / **AVIP** ... And yes the prompt is included :) ComfyUI can load it but a PR approval is needed to fix a bug on their side.
 
 
 <br>
@@ -84,6 +84,9 @@ Quality and compression settings:
 * JPEG quality is fixed at 91.
 * PNG is maxed compressed (9)
 
+Start a discussion or a poll if you want to change output quality, and add another attribute in the node. There's so many already, some complain about the node being too tall.
+
+
 #
 About extensions WebP AVIF JPEG: ComfyUI cannot load it atm... Feel free to ask ComfyUI team to add support for AVIF/WebP/jpeg!
 
@@ -119,12 +122,11 @@ jobs.json sample:
 ## RoadMap
 
 I won't promise anything, just like @thedyze did not promise anything when they released this custom node. 
-Then disappeared for good 3 months later. That's fine, I do that too. 
+Then disappeared for good 3 months later. That's fine, I do that too somtimes :)
 
 However, I do provide a way to contact me, and will accept PR and collabs. 
 Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
-- [ ] ComfyRoll has icons in the titles, these are just utf8 emojis but I want that too!
 - [ ] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt and see if that works better with Comfy!
 - [ ] offer quality setting in the node?
 - [ ] remove save_job_to_json? thisis pretty much useless actually, since it only saves the last value found for each node.
@@ -133,6 +135,11 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.46 💾
+- bug discovered with *rgthree's Ksampler Config*: using `steps_total` as an input to a Ksampler, will issue the index of the output, instead of the steps value ("\[nodeNum, 0]" instead of steps value). FIX: use `steps_total` instead of `steps`!
+- uncommented \_\_all\_\_ in init.py
+- potential bugfix in splitKey, `len(splitKey) = 2` to identify actual "node.widget" format
 
 ### release 2.45 💾
 - added 💾 in the name
