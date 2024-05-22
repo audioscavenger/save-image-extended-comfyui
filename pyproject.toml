@@ -1,0 +1,15 @@
+[project]
+name = "save-image-extended-comfyui"
+description = "Upgrade the Save File node: customize subfolders, file names with checkpoint names, or any sampler attribute your want! [w/NOTE: This node is a fork from @thedyze, since the [a/original repository](https://github.com/thedyze/save-image-extended-comfyui) is no longer maintained. Simply *uninstall* the original version and **REINSTALL** this one.]"
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["piexif", "pillow", "pillow-avif-plugin"]
+
+[project.urls]
+Repository = "https://github.com/audioscavenger/save-image-extended-comfyui"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "save-image-extended-comfyui"
+Icon = ""
