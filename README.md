@@ -98,17 +98,9 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-Quality and compression settings:
+Quality and compression settings: default is 75, 100 will activate **lossless** for AVIF and WEBP only.
 
-* AVIF quality is fixed at 60.
-* WebP quality is fixed at 75.
-* JPEG quality is fixed at 91.
-* JXL quality is fixed at 91.
-* PNG is maxed compressed (9)
-
-Start a discussion or a poll if you want to change output quality, and add another attribute in the node. There's so many already, some complain about the node being too tall.
-
-Quick comparison of size per extension, for the same picture:
+Quick comparison of size per extension, for the same picture, AVIF quality=60, WebP quality=75, jpeg quality=91 (and yes, AVIF still looks better then WebP):
 
 <p align="center">
  <img src="assets/save-image-extended-sizes-comparison.png" />
@@ -164,6 +156,9 @@ TODO:
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.61 💾
+- added quality input
 
 ### release 2.60 💾
 - added extensions jpeg, gif, tiff, bmp

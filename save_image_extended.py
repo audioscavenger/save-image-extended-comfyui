@@ -44,11 +44,10 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.60
+  version                 = 2.61
   type                    = 'output'
   
   png_compress_level      = 9
-  lossless                = False
   avif_quality            = 60
   webp_quality            = 75
   jpeg_quality            = 91
@@ -75,6 +74,7 @@ class SaveImageExtended:
   extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.gif', '.tiff', '.bmp']
+  quality                 = 75
 
   print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
   if jxl_supported:
@@ -133,6 +133,13 @@ class SaveImageExtended:
         'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder}),
         'image_preview': ('BOOLEAN', {'default': self.image_preview}),
         'output_ext': (self.output_exts, {'default': self.output_ext}),
+        'quality': ('INT', {
+          "default": self.quality, 
+          "min": 1, 
+          "max": 100, 
+          "step": 1,
+          "display": "silder"
+         }),
       },
       'optional': {
         'positive_text_opt': ('STRING', {'forceInput': True}),
@@ -511,7 +518,7 @@ class SaveImageExtended:
     return exif_dat
   
   
-  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None):
+  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=75):
     # print(f"debug save_images: image_path={image_path}")
     output_ext = os.path.splitext(os.path.basename(image_path))[1]
     metadata = None
@@ -520,30 +527,29 @@ class SaveImageExtended:
     # match is python 3.10+
     if output_ext in ['.avif']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["lossless"] = self.lossless
-      kwargs["quality"] = self.avif_quality
-      if self.avif_quality == 100: kwargs["lossless"] = True
+      kwargs["quality"] = quality
+      if quality == 100: kwargs["lossless"] = True
     elif output_ext in ['.webp']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["lossless"] = self.lossless
-      kwargs["quality"] = self.webp_quality
-      if self.webp_quality == 100: kwargs["lossless"] = True
+      kwargs["quality"] = quality
+      if quality == 100: kwargs["lossless"] = True
     elif output_ext in ['.jpg', '.jpeg']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["quality"] = self.jpeg_quality
-      kwargs["optimize"]=self.optimize_image
+      kwargs["quality"] = quality
+      kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.jxl']:
-      kwargs["lossless"] = self.lossless
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["quality"] = self.jxl_quality
+      kwargs["quality"] = quality
+      if quality == 100: kwargs["lossless"] = True
     elif output_ext in ['.tiff']:
-      kwargs["quality"] = self.tiff_quality
-      kwargs["optimize"]=self.optimize_image
+      # tiff: i suspect no quality either
+      kwargs["quality"] = quality
+      kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
       # png/gif: no quality
       if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
       kwargs["compress_level"] = self.png_compress_level
-      kwargs["optimize"]=self.optimize_image
+      kwargs["optimize"] = self.optimize_image
     # elif output_ext in ['.bmp']:
       # nothing to add
       
@@ -574,6 +580,7 @@ class SaveImageExtended:
       positive_text_opt=None,
       extra_pnginfo=None,
       prompt=None,
+      quality=75,
     ):
     
     # print(f"filename_prefix = x{filename_prefix}x")
@@ -626,7 +633,7 @@ class SaveImageExtended:
           file = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         
         image_path = os.path.join(output_path, file)
-        self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo)
+        self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo, quality)
         
         if save_job_data != 'disabled' and job_data_per_image:
           self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json', timestamp)
