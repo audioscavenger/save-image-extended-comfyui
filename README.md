@@ -144,6 +144,7 @@ TODO:
 
 ### release 2.50 💾
 - added JXL support
+- added 'BOOLEAN' support
 
 ### release 2.46 💾
 - bug discovered with *rgthree's Ksampler Config*: using `steps_total` as an input to a Ksampler, will issue the index of the output, instead of the steps value ("\[nodeNum, 0]" instead of steps value). FIX: use `steps_total` instead of `steps`!

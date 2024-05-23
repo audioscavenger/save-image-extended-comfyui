@@ -115,9 +115,9 @@ class SaveImageExtended:
           'basic, sampler, prompt', 
           'basic, models, sampler, prompt'
         ], {'default': self.save_job_data}),
-        'job_data_per_image': ([False, True], {'default': self.job_data_per_image}),
+        'job_data_per_image': ('BOOLEAN', {"default": self.job_data_per_image}),
         'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False}),
-        'save_metadata': ([True, False], {'default': self.save_metadata}),
+        'save_metadata': ('BOOLEAN', {'default': self.save_metadata}),
         'counter_digits': ('INT', {
           "default": self.counter_digits, 
           "min": 1, 
@@ -126,8 +126,8 @@ class SaveImageExtended:
           "display": "silder"
          }),
         'counter_position': (self.counter_positions, {'default': self.counter_position}),
-        'one_counter_per_folder': ([True, False], {'default': self.one_counter_per_folder}),
-        'image_preview': ([True, False], {'default': self.image_preview}),
+        'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder}),
+        'image_preview': ('BOOLEAN', {'default': self.image_preview}),
         'output_ext': (self.output_exts, {'default': self.output_ext}),
       },
       'optional': {
