@@ -48,6 +48,7 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 ```
 
 ## Parameters / Usage
+
 | Attribute | Description |
 | --- | --- |
 | `filename_prefix` |  String prefix added to files. |
@@ -67,6 +68,8 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 
 Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings: if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
 
+Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc
+
 ## Node inputs
 
 - `images` - The generated images.
@@ -75,9 +78,18 @@ Optional:
 - `positive_text_opt` - Optional string input for when using custom nodes for positive prompt text.
 - `negative_text_opt` - Optional string input for when using custom nodes for negative prompt text.
 
-## Automatic folder names and date/time in names
+## Automatic date/time conversion in file/folder names
 
-Convert the 'prefix' parameters to inputs (right click in the node and select e.g 'convert foldername_prefix to input'. Then attach the 'Get Date Time String' custom node from JPS to these inputs. This way a new folder name can be automatically generated each time generate is pressed.
+Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html):
+
+| Unix datetime | Example | Comment |
+| --- | --- | --- |
+| %F or %Y-%m-%d | 2024-05-22 | |
+| %D | 05/22/24 | This effectively creates subfolders |
+| %F %H-%M-%S | 2024-05-22 09-13-58 | |
+| %Y/%V | 2024/21 | year subfolder / ISO week number subfolder |
+
+
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.

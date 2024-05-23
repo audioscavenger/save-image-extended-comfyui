@@ -44,7 +44,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.50
+  version                 = 2.51
   type                    = 'output'
   
   png_compress_level      = 9
@@ -232,7 +232,7 @@ class SaveImageExtended:
   # Fractions and Superscripts  '⅔','2²'  False       True      True
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
-  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt):
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now()):
     custom_name = prefix
     if prompt is not None and keys_to_extract != ['']:
       found_values = {}
@@ -252,13 +252,15 @@ class SaveImageExtended:
         node, nodeKey = None, None
         
         # check if this is a subfolder: starts with ./ or /, can also end with /
-        if '/' in key:
+        # we also exclude datetime formats like "%A %d. %B %Y"
+        if '/' in key and not '%' in key:
           # key is a subfolder: ./subfolder or ../subfolder or /subfolder
           value = key
         else:
           splitKey = key.split('.')
           # we also exclude cases like "..string" or "sting.string.x" etc
-          if len(splitKey) == 2:
+          # we also exclude datetime formats like "%A %d. %B %Y"
+          if len(splitKey) == 2 and not '%' in key:
             # key has the form string.string
             if '' not in splitKey:
               # key has the form string.string
@@ -280,9 +282,13 @@ class SaveImageExtended:
               # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is, maybe it's a separator
               value = key
           else:
-            # nodeKey is not a folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
-            nodeKey = key
-            self.find_keys_recursively(prompt, [nodeKey], found_values)
+            # could be a datetime format
+            if '%' in key:
+              value = timestamp.strftime(key)
+            # nodeKey is not a datetime, folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
+            else:
+              nodeKey = key
+              self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
         # is key subfolder
         
@@ -326,7 +332,7 @@ class SaveImageExtended:
     return custom_name.strip(delimiter).strip('.').strip('/').strip(delimiter)
   
   
-  def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename):
+  def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename, timestamp=datetime.now()):
     prompt_keys_to_save = {}
     if 'basic' in save_job_data:
       if len(filename_prefix) > 0:
@@ -411,7 +417,7 @@ class SaveImageExtended:
         print(f"SaveImageExtended {version} error: The file {json_file_path} is empty or malformed. Initializing with empty data.")
         existing_data = {}
     
-    timestamp = datetime.now().strftime('%c')
+    timestamp = timestamp.strftime('%c')
     new_entry = {}
     new_entry[timestamp] = prompt_keys_to_save
     existing_data.update(new_entry)
@@ -568,8 +574,9 @@ class SaveImageExtended:
     ################################## UNCOMMENT HERE TO SEE THE ENTIRE PROMPT
     # pprint.pprint(prompt)
     ##########################################################################
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt)
-    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt)
+    timestamp = datetime.now()
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp)
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp)
     
     # Get set resolution value
     i = 255. * images[0].cpu().numpy()
@@ -601,14 +608,14 @@ class SaveImageExtended:
         self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo)
         
         if save_job_data != 'disabled' and job_data_per_image:
-          self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json')
+          self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json', timestamp)
         
         subfolder = self.get_subfolder_path(image_path, self.output_dir)
         results.append({ 'filename': file, 'subfolder': subfolder, 'type': self.type})
         counter += 1
       
       if save_job_data != 'disabled' and not job_data_per_image:
-        self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json')
+        self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, 'jobs.json', timestamp)
     
     except OSError as e:
       print(f"SaveImageExtended {version} error: An error occurred while creating the subfolder or saving the image: {e}")
