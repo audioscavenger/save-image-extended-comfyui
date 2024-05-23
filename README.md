@@ -1,5 +1,5 @@
 # 💾 Save Image Extended for ComfyUI
-**AVIF** / **WebP** / **JXL** support!
+Supports those extensions: **AVIF WebP JXL jpg jpeg png gif tiff bmp**
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -108,17 +108,25 @@ Quality and compression settings:
 
 Start a discussion or a poll if you want to change output quality, and add another attribute in the node. There's so many already, some complain about the node being too tall.
 
+Quick comparison of size per extension, for the same picture:
+
+<p align="center">
+ <img src="assets/save-image-extended-sizes-comparison.png" />
+</p>
 
 #
 About extensions WebP AVIF JPEG JXL: ComfyUI can only load PNG and WebP atm... Feel free to ask ComfyUI team to add support for AVIF/jpeg/JXL!
 
-The prompt is included under the **EXIF** tag `UserComment` (IFD0 / 0x9286) as defined [here](https://exiftool.org/TagNames/EXIF.html).
-It is saved in this form: `UserComment = {"prompt": {"1": {"inputs": {...}}}}`.
+The metadata Are included under the **EXIF** tags IFD0 as defined [here](https://exiftool.org/TagNames/EXIF.html)
+
+| Data | EXIF | Name | String looks like |
+| --- | --- | --- | --- |
+| prompt | 0x9286 | UserComment | Prompt: {"5" ... } |
+| workflow | 0x010e | ImageDescription | Workflow: {"5" ... } |
 
 You can retrieve the prompt manually with [exiftool](https://exiftool.org/), here are some example commands:
-- `exiftool -Parameters -Prompt -Workflow file.png`
-- `exiftool -Parameters -UserComment -Prompt -Workflow file.{jpg|webp|avif}`
-
+- `exiftool -Parameters -Prompt -Workflow image.png`
+- `exiftool -Parameters -UserComment -ImageDescription image.{jpg|jpeg|webp|avif|jxl}`
 
 #
 Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node already adds JPEG and WebP.
@@ -156,6 +164,11 @@ TODO:
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.60 💾
+- added extensions jpeg, gif, tiff, bmp
+- added image_optimization (only for jpeg)
+- now saves prompt and workflow separately into 0x9286/UserComment and 0x010e/ImageDescription
 
 ### release 2.51 💾
 - added unix datetime formats

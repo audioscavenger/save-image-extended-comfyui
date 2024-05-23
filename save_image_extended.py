@@ -44,7 +44,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.51
+  version                 = 2.60
   type                    = 'output'
   
   png_compress_level      = 9
@@ -53,12 +53,16 @@ class SaveImageExtended:
   webp_quality            = 75
   jpeg_quality            = 91
   jxl_quality             = 91
+  # tiff_quality has no impact unless you start meddling with the compressions algorithms
+  tiff_quality            = 91
+  # optimize_image only works for jpeg, with like just 2% reduction in size
+  optimize_image          = True
   
   filename_prefix         = 'ComfyUI'
-  filename_keys           = 'sampler_name, scheduler, cfg, steps'
+  filename_keys           = 'sampler_name, cfg, steps, %F %H-%M-%S'
   foldername_prefix       = ''
-  foldername_keys         = 'ckpt_name, ./subfolder'
-  delimiter               = '_'
+  foldername_keys         = 'ckpt_name'
+  delimiter               = '-'
   save_job_data           = 'basic, models, sampler, prompt'
   job_data_per_image      = False
   job_custom_text         = ''
@@ -70,7 +74,7 @@ class SaveImageExtended:
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
-  output_exts             = ['.webp', '.png', '.jpg']
+  output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.gif', '.tiff', '.bmp']
 
   print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
   if jxl_supported:
@@ -464,9 +468,14 @@ class SaveImageExtended:
     exif = img.getexif()
     dump = json.dumps(metadata)
     # print(f"dump={dump}")   {"prompt": { .. }, "workflow": { .. }}
-    exif[ExifTags.Base.UserComment] = json.dumps(metadata)
-    # This should work the same:
-    # exif[0x9286] = json.dumps(metadata)
+    # exif[ExifTags.Base.UserComment] = dump
+    
+    ## It seems better to separate the two
+    # 0x010e: ImageDescription
+    # 0x010f: Make
+    # 0x9286: UserComment
+    exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
+    exif[0x010e] = "Workflow: " + json.dumps(metadata['workflow']) # ImageDescription
     
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")      # type 1
@@ -507,30 +516,36 @@ class SaveImageExtended:
     output_ext = os.path.splitext(os.path.basename(image_path))[1]
     metadata = None
     kwargs = dict()
-    
+
     # match is python 3.10+
-    match output_ext:
-      case '.avif':
-        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-        kwargs["lossless"] = self.lossless
-        kwargs["quality"] = self.avif_quality
-      case '.webp':
-        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-        kwargs["lossless"] = self.lossless
-        kwargs["quality"] = self.webp_quality
-        if self.webp_quality == 100: kwargs["lossless"] = True
-      case '.jpg':
-        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-        kwargs["quality"] = self.jpeg_quality
-      case '.jxl':
-        kwargs["lossless"] = self.lossless
-        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-        kwargs["quality"] = self.jxl_quality
-      case _:
-        # png: no quality
-        if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
-        kwargs["compress_level"] = self.png_compress_level
-        # png
+    if output_ext in ['.avif']:
+      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      kwargs["lossless"] = self.lossless
+      kwargs["quality"] = self.avif_quality
+      if self.avif_quality == 100: kwargs["lossless"] = True
+    elif output_ext in ['.webp']:
+      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      kwargs["lossless"] = self.lossless
+      kwargs["quality"] = self.webp_quality
+      if self.webp_quality == 100: kwargs["lossless"] = True
+    elif output_ext in ['.jpg', '.jpeg']:
+      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      kwargs["quality"] = self.jpeg_quality
+      kwargs["optimize"]=self.optimize_image
+    elif output_ext in ['.jxl']:
+      kwargs["lossless"] = self.lossless
+      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      kwargs["quality"] = self.jxl_quality
+    elif output_ext in ['.tiff']:
+      kwargs["quality"] = self.tiff_quality
+      kwargs["optimize"]=self.optimize_image
+    elif output_ext in ['.png', '.gif']:
+      # png/gif: no quality
+      if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
+      kwargs["compress_level"] = self.png_compress_level
+      kwargs["optimize"]=self.optimize_image
+    # elif output_ext in ['.bmp']:
+      # nothing to add
       
     # img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
     img.save(image_path, **kwargs)
