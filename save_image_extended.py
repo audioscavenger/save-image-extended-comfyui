@@ -11,10 +11,28 @@ import pprint
 import piexif
 import piexif.helper
 
+avif_supported = False
+jxl_supported = False
+
+# Avif is included in requirements.txt
 try:
   import pillow_avif
-except ModuleNotFoundError:
+except:
   print(f"\033[92m[save_image_extended]\033[0m AVIF is not supported. To add it: pip install pillow pillow-avif-plugin\033[0m") 
+  pass
+else:
+  print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m") 
+  avif_supported = True
+
+# Jxl requires jxlpy wheel to be compiled, and a valid MSVC environment, which is complex task
+try:
+  from jxlpy import JXLImagePlugin
+except:
+  print(f"\033[92m[save_image_extended]\033[0m JXL is not supported. To add it: pip install jxlpy\033[0m") 
+  print(f"\033[92m[save_image_extended]\033[0m                       You will need a valid MSVC env to build the wheel\033[0m") 
+  pass
+else:
+  jxl_supported = True
 
 # PIL must be loaded after pillow_avif
 from PIL import Image, ExifTags
@@ -26,13 +44,15 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.46
+  version                 = 2.50
   type                    = 'output'
   
   png_compress_level      = 9
+  lossless                = False
   avif_quality            = 60
   webp_quality            = 75
   jpeg_quality            = 91
+  jxl_quality             = 91
   
   filename_prefix         = 'ComfyUI'
   filename_keys           = 'sampler_name, scheduler, cfg, steps'
@@ -49,15 +69,15 @@ class SaveImageExtended:
   one_counter_per_folder  = True
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
+  output_ext              = '.webp'
+  output_exts             = ['.webp', '.png', '.jpg']
 
   print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
-  if pillow_avif not in sys.modules:
-    output_ext              = '.avif'
-    output_exts             = ['.avif', '.png', '.webp', '.jpg']
-    print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m\n") 
-  else:
-    output_ext              = '.png'
-    output_exts             = ['.png', '.webp', '.jpg']
+  if jxl_supported:
+    output_exts.insert(0, '.jxl')
+  # if pillow_avif not in sys.modules:
+  if avif_supported:
+    output_exts.insert(0, '.avif')
 
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
@@ -433,6 +453,9 @@ class SaveImageExtended:
     dump = json.dumps(metadata)
     # print(f"dump={dump}")   {"prompt": { .. }, "workflow": { .. }}
     exif[ExifTags.Base.UserComment] = json.dumps(metadata)
+    # This should work the same:
+    # exif[0x9286] = json.dumps(metadata)
+    
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")      # type 1
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="ascii")    # type 1
@@ -477,16 +500,22 @@ class SaveImageExtended:
     match output_ext:
       case '.avif':
         if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+        kwargs["lossless"] = self.lossless
         kwargs["quality"] = self.avif_quality
       case '.webp':
         if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-        kwargs["lossless"] = False
+        kwargs["lossless"] = self.lossless
         kwargs["quality"] = self.webp_quality
         if self.webp_quality == 100: kwargs["lossless"] = True
       case '.jpg':
         if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
         kwargs["quality"] = self.jpeg_quality
+      case '.jxl':
+        kwargs["lossless"] = self.lossless
+        if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+        kwargs["quality"] = self.jxl_quality
       case _:
+        # png: no quality
         if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
         kwargs["compress_level"] = self.png_compress_level
         # png

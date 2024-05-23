@@ -1,5 +1,5 @@
 # 💾 Save Image Extended for ComfyUI
-**AVIF** and **WebP** support!
+**AVIF** / **WebP** / **JXL** support!
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -7,8 +7,9 @@
 
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
-* Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_: 
-* Oh btw... also saves your output as **WebP** / **JPEG** / **AVIP** ... And yes the prompt is included :) ComfyUI can load it but a PR approval is needed to fix a bug on their side.
+* Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_
+* Oh btw... also saves your output as **AVIF** / **WebP** / **JPEG** / **JXL** ... And yes the prompt is included :)
+* ComfyUI can only load PNG and WebP atm
 
 
 <br>
@@ -33,10 +34,15 @@ There is a requirements.txt that will take care of that, but just in case:
 pip install piexif pillow pillow-avif-plugin
 ```
 
+For Jpeg XL / jxl it's more complicated. You need to install and compile the wheel jxlpy, and therefore, need a valid and functional MSVC installation.
+
+```
+pip install jxlpy
+```
 
 ### Manual Download
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
-2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo.
+2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo under ComfyUI\custom_nodes\
 ```
 git clone https://github.com/audioscavenger/save-image-extended-comfyui
 ```
@@ -82,13 +88,14 @@ Quality and compression settings:
 * AVIF quality is fixed at 60.
 * WebP quality is fixed at 75.
 * JPEG quality is fixed at 91.
+* JXL quality is fixed at 91.
 * PNG is maxed compressed (9)
 
 Start a discussion or a poll if you want to change output quality, and add another attribute in the node. There's so many already, some complain about the node being too tall.
 
 
 #
-About extensions WebP AVIF JPEG: ComfyUI cannot load it atm... Feel free to ask ComfyUI team to add support for AVIF/WebP/jpeg!
+About extensions WebP AVIF JPEG JXL: ComfyUI can only load PNG and WebP atm... Feel free to ask ComfyUI team to add support for AVIF/jpeg/JXL!
 
 The prompt is included under the **EXIF** tag `UserComment` (IFD0 / 0x9286) as defined [here](https://exiftool.org/TagNames/EXIF.html).
 It is saved in this form: `UserComment = {"prompt": {"1": {"inputs": {...}}}}`.
@@ -124,6 +131,8 @@ jobs.json sample: always generated and appended, not sure what it can be used fo
 I won't promise you the moon, but since I use this node myself, I will maintain it as much as I can. I do provide a way to contact me, and will accept PR and collabs. 
 Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
 
+TODO:
+
 - [ ] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt and see if that works better with Comfy!
 - [ ] offer quality setting in the node?
 - [ ] remove save_job_to_json? thisis pretty much useless actually, since it only saves the last value found for each node.
@@ -132,6 +141,9 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.50 💾
+- added JXL support
 
 ### release 2.46 💾
 - bug discovered with *rgthree's Ksampler Config*: using `steps_total` as an input to a Ksampler, will issue the index of the output, instead of the steps value ("\[nodeNum, 0]" instead of steps value). FIX: use `steps_total` instead of `steps`!
