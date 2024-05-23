@@ -89,6 +89,9 @@ Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.
 | %F %H-%M-%S | 2024-05-22 09-13-58 | |
 | %Y/%V | 2024/21 | year subfolder / ISO week number subfolder |
 
+<p align="center">
+ <img src="assets/save-image-extended-comfyui-example-2.png" />
+</p>
 
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
@@ -153,6 +156,9 @@ TODO:
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.51 💾
+- added unix datetime formats
 
 ### release 2.50 💾
 - added JXL support

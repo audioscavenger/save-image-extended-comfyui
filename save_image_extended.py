@@ -233,7 +233,11 @@ class SaveImageExtended:
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
   def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now()):
-    custom_name = prefix
+    if '%' in prefix:
+      custom_name = timestamp.strftime(prefix)
+    else:
+      custom_name = prefix
+    
     if prompt is not None and keys_to_extract != ['']:
       found_values = {}
       # print(f"debug generate_custom_name: --prefix: {prefix}")
@@ -248,6 +252,8 @@ class SaveImageExtended:
       #   'inputs': {'cfg': 1.6, 
       #     'denoise': 1.0, ...
       for key in keys_to_extract:
+        if not key: continue
+        
         value = None
         node, nodeKey = None, None
         
