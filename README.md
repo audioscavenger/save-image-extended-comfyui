@@ -8,44 +8,14 @@ Supports those extensions: **AVIF WebP JXL jpg jpeg png gif tiff bmp**
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_
-* Oh btw... also saves your output as **AVIF** / **WebP** / **JPEG** / **JXL** ... And yes the prompt is included :)
-* ComfyUI can only load PNG and WebP atm
+* Promt saved in jpeg and AVIF, but ComfyUI can only load PNG and WebP atm
 
 
 <br>
 <p align="center">
  <img src="assets/save-image-extended-comfyui-named_nodes_widgets-example.png" />
 <br><br>
- Happy saving!
 </p>
-
-*Reboot by AudioscavengeR since 2024-05-05, original idea from [@thedyze](https://github.com/thedyze/save-image-extended-comfyui)*
-
-## Installation
-### Requirements:
-There is a requirements.txt that will take care of that, but just in case:
-
-- python 10.6
-- piexif
-- pillow
-- pillow-avif-plugin
-
-```
-pip install piexif pillow pillow-avif-plugin
-```
-
-For Jpeg XL / jxl it's more complicated. You need to install and compile the wheel jxlpy, and therefore, need a valid and functional MSVC installation.
-
-```
-pip install jxlpy
-```
-
-### Manual Download
-1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
-2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo under ComfyUI\custom_nodes\
-```
-git clone https://github.com/audioscavenger/save-image-extended-comfyui
-```
 
 ## Parameters / Usage
 
@@ -93,6 +63,33 @@ Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.
  <img src="assets/save-image-extended-comfyui-example-2.png" />
 </p>
 
+## Installation
+### Requirements:
+There is a requirements.txt that will take care of that, but just in case:
+
+- python 10.6
+- piexif
+- pillow
+- pillow-avif-plugin
+
+```
+pip install piexif pillow pillow-avif-plugin
+```
+
+For Jpeg XL / jxl it's more complicated. You need to install and compile the wheel jxlpy, and therefore, need a valid and functional MSVC installation.
+
+```
+pip install jxlpy
+```
+
+### Manual Download
+1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
+2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo under ComfyUI\custom_nodes\
+```
+git clone https://github.com/audioscavenger/save-image-extended-comfyui
+```
+
+## Miscelaneous
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
@@ -142,6 +139,7 @@ jobs.json sample: always generated and appended, not sure what it can be used fo
 
 
 ## RoadMap
+*Reboot by AudioscavengeR since 2024-05-05, original idea from [@thedyze](https://github.com/thedyze/save-image-extended-comfyui)*
 
 I won't promise you the moon, but since I use this node myself, I will maintain it as much as I can. I do provide a way to contact me, and will accept PR and collabs. 
 Once I feel like I don't have time to work on it, I will gladly transfer ownership or let collabs maintain it.
