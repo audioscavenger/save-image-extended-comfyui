@@ -118,6 +118,9 @@ You can retrieve the prompt manually with [exiftool](https://exiftool.org/), her
 - `exiftool -Parameters -UserComment -ImageDescription image.{jpg|jpeg|webp|avif|jxl}`
 
 #
+ComfyUI cannot load lossless WebP atm. Feel free to try and fix `pnginfo.js`
+
+#
 Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node already adds JPEG and WebP.
 
 #
@@ -154,6 +157,10 @@ TODO:
 - [ ] improve get_latest_counter: fails when user renames files: appends text after counter
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+
+### release 2.62 💾
+- prompt and workflow are saved in IFD 270 and 271 for better load compatibility
+- disabled jobs.json by default, this thingy seems useless to me
 
 ### release 2.61 💾
 - added quality input

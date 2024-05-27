@@ -44,7 +44,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.61
+  version                 = 2.62
   type                    = 'output'
   
   png_compress_level      = 9
@@ -62,7 +62,7 @@ class SaveImageExtended:
   foldername_prefix       = ''
   foldername_keys         = 'ckpt_name'
   delimiter               = '-'
-  save_job_data           = 'basic, models, sampler, prompt'
+  save_job_data           = 'disabled'
   job_data_per_image      = False
   job_custom_text         = ''
   save_metadata           = True
@@ -464,7 +464,8 @@ class SaveImageExtended:
     ## For Comfy to load an image, it need a PNG tag at the root: Prompt={prompt}
     ## For AVIF WebP Jpeg, it's only Exif that's available... and UserComment is the best choice.
 
-    ## This method gives wrong results, as [ExifTool] will issue Warning: Invalid EXIF text encoding for UserComment
+    ## This method gives good results, as long as you save the prompt/workflow in 2 separate Exif tags
+    ## Otherwise, [ExifTool] will issue Warning: Invalid EXIF text encoding for UserComment
     #   entryOffset 10
     #   tag 37510
     #   type 2
@@ -481,7 +482,9 @@ class SaveImageExtended:
     # 0x010e: ImageDescription
     # 0x010f: Make
     # 0x9286: UserComment
-    exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
+    # both prompt and workflow must be in IFD close together of that can cause problems for the parseIFD function on import
+    # exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
+    exif[0x010f] = "Prompt: " + json.dumps(metadata['prompt'])     # Make
     exif[0x010e] = "Workflow: " + json.dumps(metadata['workflow']) # ImageDescription
     
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
@@ -523,7 +526,9 @@ class SaveImageExtended:
     output_ext = os.path.splitext(os.path.basename(image_path))[1]
     metadata = None
     kwargs = dict()
-
+    
+    # TODO: see if convert_hdr_to_8bit=False make a change
+    
     # match is python 3.10+
     if output_ext in ['.avif']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
