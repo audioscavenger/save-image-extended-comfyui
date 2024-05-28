@@ -1,4 +1,6 @@
 # 💾 Save Image Extended for ComfyUI
+Save as AVIF, WebP, JPEG, customize the folder, sub-folders, and filenames of your images!
+
 Supports those extensions: **AVIF WebP JXL jpg jpeg png gif tiff bmp**
 
 <p align="center">
