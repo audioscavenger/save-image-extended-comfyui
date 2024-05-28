@@ -483,6 +483,7 @@ class SaveImageExtended:
     # 0x010f: Make
     # 0x9286: UserComment
     # both prompt and workflow must be in IFD close together of that can cause problems for the parseIFD function on import
+    # https://exiftool.org/TagNames/EXIF.html
     # exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
     exif[0x010f] = "Prompt: " + json.dumps(metadata['prompt'])     # Make
     exif[0x010e] = "Workflow: " + json.dumps(metadata['workflow']) # ImageDescription

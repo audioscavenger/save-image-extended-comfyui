@@ -225,3 +225,5 @@ TODO:
 ### release 2.0
 - [x] Reboot on 2024-05-05
 
+## :ribbon: Licence
+[GPL 3.0](https://choosealicense.com/licenses/gpl-3.0/)
