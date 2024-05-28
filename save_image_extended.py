@@ -44,7 +44,7 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.62
+  version                 = 2.63
   type                    = 'output'
   
   png_compress_level      = 9
@@ -421,7 +421,7 @@ class SaveImageExtended:
                     if isinstance(negative_text[0], str) and len(negative_text[0]) < 6:
                       if isinstance(negative_text[1], (int, float)):
                         continue
-                prompt_keys_to_save['positive_prompt'] = negative_text
+                prompt_keys_to_save['negative_prompt'] = negative_text
     
     # Append data and save
     json_file_path = os.path.join(output_path, filename)

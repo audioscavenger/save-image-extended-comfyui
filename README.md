@@ -160,6 +160,9 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
 
+### release 2.63 💾
+- fixed negative_prompt job save overwritten by positive_prompt
+
 ### release 2.62 💾
 - prompt and workflow are saved in IFD 270 and 271 for better load compatibility
 - disabled jobs.json by default, this thingy seems useless to me
