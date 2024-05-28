@@ -11,6 +11,8 @@ import pprint
 import piexif
 import piexif.helper
 
+version = 2.64
+
 avif_supported = False
 jxl_supported = False
 
@@ -44,7 +46,22 @@ original_locale = locale.setlocale(locale.LC_TIME, '')
 
 # class SaveImageExtended -------------------------------------------------------------------------------
 class SaveImageExtended:
-  version                 = 2.63
+  RETURN_TYPES = ()
+  FUNCTION = 'save_images'
+  OUTPUT_NODE = True
+  CATEGORY = 'image'
+  DESCRIPTION = """
+### subfolders:
+- you can use / or ./ or even ../ to start from parent
+- you can also use / as the separator
+- if your widget name has subfolders like SDXL/whatnot, you will have subfolders too
+### Sample datetime formats: see [man datetime](https://www.man7.org/linux/man-pages/man1/date.1.html)
+- %F = %Y-%m-%d = 2024-05-22
+- %H-%M-%S = 09-13-58
+- %D = 05/22/24 (subfolders)
+
+"""
+
   type                    = 'output'
   
   png_compress_level      = 9
@@ -147,11 +164,6 @@ class SaveImageExtended:
                     },
       'hidden': {'prompt': 'PROMPT', 'extra_pnginfo': 'EXTRA_PNGINFO'},
     }
-  
-  RETURN_TYPES = ()
-  FUNCTION = 'save_images'
-  OUTPUT_NODE = True
-  CATEGORY = 'image'
   
   
   def get_subfolder_path(self, image_path, output_path):

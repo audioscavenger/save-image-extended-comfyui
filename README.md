@@ -108,11 +108,12 @@ Quick comparison of size per extension, for the same picture, AVIF quality=60, W
 #
 About extensions WebP AVIF JPEG JXL: ComfyUI can only load PNG and WebP atm... Feel free to ask ComfyUI team to add support for AVIF/jpeg/JXL!
 
-The metadata Are included under the **EXIF** tags IFD0 as defined [here](https://exiftool.org/TagNames/EXIF.html)
+The metadata Are included under the **EXIF** tags IFD below, as defined [here](https://exiftool.org/TagNames/EXIF.html)
+WAS Node Suite also use those tags. They must be next to each other in order to Comfy to be able to load them with drag and drop.
 
 | Data | EXIF | Name | String looks like |
 | --- | --- | --- | --- |
-| prompt | 0x9286 | UserComment | Prompt: {"5" ... } |
+| prompt | 0x010f | Make | Prompt: {"5" ... } |
 | workflow | 0x010e | ImageDescription | Workflow: {"5" ... } |
 
 You can retrieve the prompt manually with [exiftool](https://exiftool.org/), here are some example commands:
@@ -151,17 +152,19 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 
 TODO:
 
-- [ ] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt and see if that works better with Comfy!
-- [ ] offer quality setting in the node?
-- [ ] remove save_job_to_json? thisis pretty much useless actually, since it only saves the last value found for each node.
-- [ ] remove job_custom_text? what is this for?
-- [ ] remove jobs.json? jobs history, alright. What do you do with that? images contain the prompt, what is this for?
-- [ ] improve get_latest_counter: fails when user renames files: appends text after counter
+- [ ] improve get_latest_counter: restarts when user renames files after the counter part.
 - [ ] offer to place the counter anywhere, as a key in filename_keys
-- [ ] files can get out of order if prefixes change... that is expected, but is this what we want? another reason to have the counter place anywhere we want
+- [ ] keep same counter if extension changes?
+- [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.64 💾
+- added Help at top-right corner, based off KJNodes
 
 ### release 2.63 💾
 - fixed negative_prompt job save overwritten by positive_prompt
+- [x] remove job_custom_text? no, some ppl use it apparently
+- [x] remove jobs.json? no, some ppl use it apparently
+- [x] ComfyRoll CR XY Save Grid Image: it offers jpeg webp tif - check how it embeds prompt - nope it does not
 
 ### release 2.62 💾
 - prompt and workflow are saved in IFD 270 and 271 for better load compatibility
