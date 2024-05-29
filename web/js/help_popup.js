@@ -38,6 +38,7 @@ export const loadScript = (
   })
 }
 
+
 loadScript('/assets/js/marked.min.js').catch((e) => {
   console.log(e)
 })
