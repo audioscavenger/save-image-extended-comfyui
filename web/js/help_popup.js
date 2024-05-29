@@ -1,6 +1,6 @@
 import { app } from "../../../scripts/app.js";
 
-// code based on mtb nodes by Mel Massadian https://github.com/melMass/comfy_mtb/ and KJNodes
+// code based on mtb nodes by Mel Massadian https://github.com/melMass/comfy_mtb/ and sieNodes
 export const loadScript = (
   FILE_URL,
   async = true,
@@ -39,10 +39,10 @@ export const loadScript = (
 }
 
 
-loadScript('/assets/js/marked.min.js').catch((e) => {
+loadScript('/save_image_extended/js/marked.min.js').catch((e) => {
   console.log(e)
 })
-loadScript('/assets/js/purify.min.js').catch((e) => {
+loadScript('/save_image_extended/js/purify.min.js').catch((e) => {
   console.log(e)
 })
 
@@ -70,7 +70,7 @@ app.registerExtension({
 });
 
 const create_documentation_stylesheet = () => {
-    const tag = 'kj-documentation-stylesheet'
+    const tag = 'sie-documentation-stylesheet'
 
     let styleTag = document.head.querySelector(tag)
 
@@ -79,7 +79,7 @@ const create_documentation_stylesheet = () => {
       styleTag.type = 'text/css'
       styleTag.id = tag
       styleTag.innerHTML = `
-      .kj-documentation-popup {
+      .sie-documentation-popup {
         background: var(--comfy-menu-bg);
         position: absolute;
         color: var(--fg-color);
@@ -159,7 +159,7 @@ const create_documentation_stylesheet = () => {
 
         create_documentation_stylesheet()
         contentWrapper.classList.add('content-wrapper');
-        docElement.classList.add('kj-documentation-popup')
+        docElement.classList.add('sie-documentation-popup')
         
         //parse the string from the python node code to html with marked, and sanitize the html with DOMPurify
         contentWrapper.innerHTML = DOMPurify.sanitize(marked.parse(nodeData.description,))
