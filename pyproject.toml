@@ -2,7 +2,7 @@
 name = "save-image-extended-comfyui"
 description = "Save as AVIF, WebP, JPEG, customize the folder, sub-folders, and filenames of your images!"
 version = "2.64"
-license = "AGPL3.0"
+license = "LICENCE"
 dependencies = ["piexif", "pillow", "pillow-avif-plugin"]
 
 [project.urls]

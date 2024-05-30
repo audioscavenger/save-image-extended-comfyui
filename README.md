@@ -157,8 +157,8 @@ TODO:
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
 
-### release 2.65 💾
-- published in comfy-cli
+### release 2.6.5 💾
+- published in comfy-registry
 
 ### release 2.64 💾
 - added Help at top-right corner, based off KJNodes
