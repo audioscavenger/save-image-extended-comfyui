@@ -238,3 +238,10 @@ TODO:
 
 ## :ribbon: Licence
 [GPL 3.0](https://choosealicense.com/licenses/gpl-3.0/)
+
+## :beer: Buy me a beer
+Like my work? This tool helped you? Want to sponsor more awesomeness like this?
+
+<p align="center">
+ <a href="https://www.paypal.com/donate/?hosted_button_id=CD7P7PK3WP8WU"><img src="/assets/paypal-Donate-QR-Code.png" /></a>
+</p>
