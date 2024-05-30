@@ -1,0 +1,25 @@
+name: "Publish To Registry"
+description: "Publish Custom Nodes to Registry."
+inputs:
+  personal_access_token:
+    description: "Personal Access Token for authenticating to the Registry"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Custom Node Repository
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+          python-version: '3.10'
+    - name: Install comfy-cli
+      shell: bash
+      run: |
+          pip install comfy-cli
+    - name: Publish Node
+      shell: bash
+      run: |
+          comfy --skip-prompt --no-enable-telemetry env
+          comfy node publish --token ${{ inputs.personal_access_token }}
+    
