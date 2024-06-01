@@ -86,8 +86,6 @@ For Jpeg XL / jxl it's more complicated. You cannot compile the wheel jxlpy on W
 pip install -U imagecodecs
 ```
 
-[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if it is true indeed that Google is working on WebP2, it is unlikely to take off any day soon. Yes it's better and faster than the current best codec: AVIF, but without support it's going nowhere.
-
 ### Manual Download
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
 2. Use the `git clone` command to clone the [save-image-extended-comfyui](https://github.com/audioscavenger/save-image-extended-comfyui) repo under ComfyUI\custom_nodes\
@@ -97,20 +95,34 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 
 ## Miscelaneous
 #
-Pillow cannot save Exif data in JPEG2000, or maybe I did not read the doc. Who the heck is using JPEG2000 in 2024 anyway?
+[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if true indeed that Google is working on WebP2, jxl is unlikely to take off any day soon. Proponents arguably declare with no proof, that jxl is better and faster than the current best codec: AVIF. But again, without support from the industry, it's going nowhere.
+
+I tested with compression 90 and it's good, with a caveat. The compression offered by pillow is 3x lower then Image Magick for the same level. No idea why.
+
+#
+Pillow cannot save Exif data in JPEG2000, nor can it compress it in any way. Who the heck is using JPEG2000 in 2024 anyway?
 
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-Quality and compression settings: default is 75, 100 will activate **lossless** for AVIF and WEBP only.
+Quality and compression settings: default is 90, 100 will activate **lossless** for AVIF and WEBP only.
 
-Quick comparison of size per extension, for the same picture, AVIF quality=60, WebP quality=75, jpeg quality=91 (and yes, AVIF still looks better then WebP):
+Quick comparison of size per extension, for the same 512x512 picture, with similar visual quality:
+| Ext | Compression | Maker | Size |
+| --- | --- | --- | --- |
+| png  | max 9    | PIL     | 413111 |
+| j2k  | n/a      | PIL     | 395028 |
+| jxl  | lossless | PIL     | 301310 |
+| jxl  | 90       | PIL     | 179210 |
+| jpeg | 90       | PIL     |  88554 |
+| avif | 90       | Imagick |  67272 |
+| webp | 90       | Imagick |  64416 |
+| webp | 90       | PIL     |  64356 |
+| avif | 60       | PIL     |  47353 |
+| avif | 60       | Imagick |  33691 |
 
-<p align="center">
- <img src="assets/save-image-extended-sizes-comparison.png" />
-</p>
 
 #
 About extensions WebP AVIF JPEG JXL: ComfyUI can only load PNG and WebP atm... Feel free to ask ComfyUI team to add support for AVIF/jpeg/JXL!

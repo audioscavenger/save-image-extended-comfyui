@@ -40,7 +40,7 @@ else:
   print(f"\033[92m[save_image_extended] JPEGXL is supported! YeePee!\033[0m") 
   jxl_supported = True
 
-# PIL must be loaded after pillow_avif
+# PIL must be loaded after pillow plugins
 from PIL import Image, ExifTags
 from PIL.PngImagePlugin import PngInfo
 
