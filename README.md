@@ -110,18 +110,18 @@ Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, C
 Quality and compression settings: default is 90, 100 will activate **lossless** for AVIF and WEBP only.
 
 Quick comparison of size per extension, for the same 512x512 picture, with similar visual quality:
-| Ext | Compression | Maker | Size |
-| --- | --- | --- | --- |
-| png  | max 9    | PIL     | 413111 |
-| j2k  | n/a      | PIL     | 395028 |
-| jxl  | lossless | PIL     | 301310 |
-| jxl  | 90       | PIL     | 179210 |
-| jpeg | 90       | PIL     |  88554 |
-| avif | 90       | Imagick |  67272 |
-| webp | 90       | Imagick |  64416 |
-| webp | 90       | PIL     |  64356 |
-| avif | 60       | PIL     |  47353 |
-| avif | 60       | Imagick |  33691 |
+| Ext | Compression | Maker | Size | Compression |
+| --- | --- | --- | --- | --- |
+| png  | max 9    | PIL     | 413111 | 0% |
+| j2k  | n/a      | PIL     | 395028 | 4% |
+| jxl  | lossless | PIL     | 301310 | 27% |
+| jxl  | 90       | PIL     | 179210 | 57% |
+| jpeg | 90       | PIL     |  88554 | 79% |
+| avif | 90       | Imagick |  67272 | 84% |
+| webp | 90       | Imagick |  64416 | 84% |
+| webp | 90       | PIL     |  64356 | 84% |
+| avif | 60       | PIL     |  47353 | 89% |
+| avif | 60       | Imagick |  33691 | 92% |
 
 
 #
