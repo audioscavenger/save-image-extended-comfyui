@@ -1,7 +1,7 @@
 # 💾 Save Image Extended for ComfyUI
-Save as AVIF, WebP, JPEG, customize the folder, sub-folders, and filenames of your images!
+Save as JXL, AVIF, WebP, JPEG, JPEG2000, customize the folder, sub-folders, and filenames of your images!
 
-Supports those extensions: **AVIF WebP JXL jpg jpeg png gif tiff bmp**
+Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 
 <p align="center">
  <img src="assets/save-image-extended-comfyui-example.png" />
@@ -10,7 +10,7 @@ Supports those extensions: **AVIF WebP JXL jpg jpeg png gif tiff bmp**
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_
-* Promt saved in jpeg and AVIF, but ComfyUI can only load PNG and WebP atm
+* Warning: ComfyUI can only load prompts from PNG and WebP atm
 
 
 <br>
@@ -71,18 +71,22 @@ There is a requirements.txt that will take care of that, but just in case:
 
 - python 10.6
 - piexif
+- imagecodecs
 - pillow
 - pillow-avif-plugin
+- pillow-jxl-plugin
 
 ```
 pip install piexif pillow pillow-avif-plugin
 ```
 
-For Jpeg XL / jxl it's more complicated. You need to install and compile the wheel jxlpy, and therefore, need a valid and functional MSVC installation.
+For Jpeg XL / jxl it's more complicated. You cannot compile the wheel jxlpy on Windows. Therefore, we use an alternative: [imagecodecs](https://pypi.org/project/imagecodecs/)
 
 ```
-pip install jxlpy
+pip install -U imagecodecs
 ```
+
+[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if it is true indeed that Google is working on WebP2, it is unlikely to take off any day soon. Yes it's better and faster than the current best codec: AVIF, but without support it's going nowhere.
 
 ### Manual Download
 1. Open a terminal inside the 'custom_nodes' folder located in your ComfyUI installation dir
@@ -92,6 +96,9 @@ git clone https://github.com/audioscavenger/save-image-extended-comfyui
 ```
 
 ## Miscelaneous
+#
+Pillow cannot save Exif data in JPEG2000, or maybe I did not read the doc. Who the heck is using JPEG2000 in 2024 anyway?
+
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
@@ -156,6 +163,11 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.70 💾
+- added JPEG-XL
+- added JPEG2000
+- fixed help popup text color in dark mode
 
 ### release 2.65 💾
 - published in comfy-registry

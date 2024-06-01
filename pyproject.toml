@@ -1,9 +1,9 @@
 [project]
 name = "save-image-extended-comfyui"
 description = "Save as AVIF, WebP, JPEG, customize the folder, sub-folders, and filenames of your images!"
-version = "2.65"
+version = "2.70"
 license = "LICENCE"
-dependencies = ["piexif", "pillow", "pillow-avif-plugin"]
+dependencies = ["piexif", "imagecodecs", "pillow", "pillow-avif-plugin", "pillow-jxl-plugin"]
 
 [project.urls]
 Repository = "https://github.com/audioscavenger/save-image-extended-comfyui"

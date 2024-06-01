@@ -1,3 +1,7 @@
 piexif
+# jpegxl support: imagecodecs will bring libjxl 0.9.0
+imagecodecs
+
 pillow
 pillow-avif-plugin
+pillow-jxl-plugin

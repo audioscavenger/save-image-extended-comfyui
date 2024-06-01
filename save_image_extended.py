@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.65
+version = 2.70
 
 avif_supported = False
 jxl_supported = False
@@ -23,17 +23,21 @@ except:
   print(f"\033[92m[save_image_extended]\033[0m AVIF is not supported. To add it: pip install pillow pillow-avif-plugin\033[0m") 
   pass
 else:
-  print(f"\033[92m[save_image_extended] AVIF is supported! Woohoo!\033[0m") 
+  print(f"\033[92m[save_image_extended] AVIF   is supported! Woohoo!\033[0m") 
   avif_supported = True
 
 # Jxl requires jxlpy wheel to be compiled, and a valid MSVC environment, which is complex task
 try:
-  from jxlpy import JXLImagePlugin
+  # jxlpy is in early stages of development. None one has ever compiled it on Windows AFAIK
+  # from jxlpy import JXLImagePlugin
+  # from imagecodecs import (jpegxl_encode, jpegxl_decode, jpegxl_check, jpegxl_version, JPEGXL)
+  import pillow_jxl
 except:
   print(f"\033[92m[save_image_extended]\033[0m JXL is not supported. To add it: pip install jxlpy\033[0m") 
   print(f"\033[92m[save_image_extended]\033[0m                       You will need a valid MSVC env to build the wheel\033[0m") 
   pass
 else:
+  print(f"\033[92m[save_image_extended] JPEGXL is supported! YeePee!\033[0m") 
   jxl_supported = True
 
 # PIL must be loaded after pillow_avif
@@ -66,11 +70,12 @@ class SaveImageExtended:
   
   png_compress_level      = 9
   avif_quality            = 60
-  webp_quality            = 75
-  jpeg_quality            = 91
-  jxl_quality             = 91
+  webp_quality            = 90
+  jpeg_quality            = 90
+  jxl_quality             = 90
+  j2k_quality             = 90
   # tiff_quality has no impact unless you start meddling with the compressions algorithms
-  tiff_quality            = 91
+  tiff_quality            = 90
   # optimize_image only works for jpeg, with like just 2% reduction in size
   optimize_image          = True
   
@@ -90,14 +95,15 @@ class SaveImageExtended:
   image_preview           = True
   extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
-  output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.gif', '.tiff', '.bmp']
-  quality                 = 75
+  output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
+  quality                 = 90
 
   print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
   if jxl_supported:
     output_exts.insert(0, '.jxl')
   # if pillow_avif not in sys.modules:
   if avif_supported:
+    # no matter what people say, jxl is far away from being integrated in browsers. I bet on AVIF.
     output_exts.insert(0, '.avif')
 
   def __init__(self):
@@ -474,7 +480,7 @@ class SaveImageExtended:
       metadata.update(extra_pnginfo)
     
     ## For Comfy to load an image, it need a PNG tag at the root: Prompt={prompt}
-    ## For AVIF WebP Jpeg, it's only Exif that's available... and UserComment is the best choice.
+    ## For AVIF WebP Jpeg JXL, it's only Exif that's available... and UserComment is the best choice.
 
     ## This method gives good results, as long as you save the prompt/workflow in 2 separate Exif tags
     ## Otherwise, [ExifTool] will issue Warning: Invalid EXIF text encoding for UserComment
@@ -534,34 +540,36 @@ class SaveImageExtended:
     return exif_dat
   
   
-  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=75):
+  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=90):
     # print(f"debug save_images: image_path={image_path}")
     output_ext = os.path.splitext(os.path.basename(image_path))[1]
     metadata = None
     kwargs = dict()
     
     # TODO: see if convert_hdr_to_8bit=False make a change
+    # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
     
-    # match is python 3.10+
-    if output_ext in ['.avif']:
+    if output_ext in ['.avif', '.webp', '.jxl']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["quality"] = quality
-      if quality == 100: kwargs["lossless"] = True
-    elif output_ext in ['.webp']:
+      if quality == 100:
+        kwargs["lossless"] = True
+      else:
+        kwargs["quality"] = quality
+    if output_ext in ['.j2k', '.jp2', '.jpc', '.jpf', '.jpx', '.j2c']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["quality"] = quality
-      if quality == 100: kwargs["lossless"] = True
+      if quality < 100:
+        kwargs["irreversible"] = True
+        # there is no such thing as compression level in JPEG2000. Read https://comprimato.com/blog/2017/06/22/bitrate-control-quality-layers-jpeg2000/
+        # kwargs["quality_mode"] = 'rates' or 'dB'
+        # kwargs["quality_layers"] = [0,1,2] no refence online. i tried all values from 0 to 100 and no change in filesize
+      else:
+        kwargs["quality"] = quality
     elif output_ext in ['.jpg', '.jpeg']:
       if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      # https://stackoverflow.com/questions/19303621/why-is-the-quality-of-jpeg-images-produced-by-pil-so-poor
+      kwargs["subsampling"] = 0
       kwargs["quality"] = quality
-      kwargs["optimize"] = self.optimize_image
-    elif output_ext in ['.jxl']:
-      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
-      kwargs["quality"] = quality
-      if quality == 100: kwargs["lossless"] = True
     elif output_ext in ['.tiff']:
-      # tiff: i suspect no quality either
-      kwargs["quality"] = quality
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
       # png/gif: no quality

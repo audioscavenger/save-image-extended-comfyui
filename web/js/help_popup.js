@@ -74,6 +74,7 @@ const create_documentation_stylesheet = () => {
 
     let styleTag = document.head.querySelector(tag)
 
+    // color: var(--fg-color); will be black even in dark mode... bug but i can't tell where it comes from
     if (!styleTag) {
       styleTag = document.createElement('style')
       styleTag.type = 'text/css'
@@ -82,7 +83,7 @@ const create_documentation_stylesheet = () => {
       .sie-documentation-popup {
         background: var(--comfy-menu-bg);
         position: absolute;
-        color: var(--fg-color);
+        color: white;
         font: 12px monospace;
         line-height: 1.5em;
         padding: 10px;
