@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.70
+version = 2.73
 
 avif_supported = False
 jxl_supported = False
@@ -109,7 +109,6 @@ class SaveImageExtended:
   def __init__(self):
     self.output_dir = folder_paths.get_output_directory()
     self.prefix_append = ''
-    
   
   """
   Return a dictionary which contains config for all input fields.
@@ -127,6 +126,8 @@ class SaveImageExtended:
   """
   @classmethod
   def INPUT_TYPES(self):
+    # this is checked by ComfyUI/execution.py: validate_inputs(prompt, item, validated):
+    # must also define VALIDATE_INPUTS(self) so we can fill in missing inputs when new inputs are added by new versions
     return {
       'required': {
         'images': ('IMAGE', ),
@@ -170,8 +171,27 @@ class SaveImageExtended:
                     },
       'hidden': {'prompt': 'PROMPT', 'extra_pnginfo': 'EXTRA_PNGINFO'},
     }
-  
-  
+
+  # This class serves no purpose, it can only test 1 element. you always get all errors even if only one element is bad
+  # @classmethod
+  # def VALIDATE_INPUTS(self, output_ext, quality, **kwargs):
+    # print(f"VALIDATE_INPUTS output_ext = x{output_ext}x")
+    # print(f"VALIDATE_INPUTS quality = x{quality}x")
+    # if output_ext == None or output_ext == '':
+      # return "cannot be empty"
+    # if output_ext not in self.output_exts:
+      # return "extension invalid"
+    # else:
+      # return True
+    # if quality == None or quality == '' or quality == 0:
+      # return "cannot be empty or 0"
+    # return True
+
+  # TODO: see how that works and how that can help
+  # @classmethod
+  # def IS_CHANGED(self, **kwargs):
+      # return float("nan")
+
   def get_subfolder_path(self, image_path, output_path):
     image_path = Path(image_path).resolve()
     output_path = Path(output_path).resolve()
@@ -210,9 +230,19 @@ class SaveImageExtended:
   
   # find_keys_recursively is a self-updating recursive method, that will update the dict found_values
   def find_keys_recursively(self, prompt={}, keys_to_find=[], found_values={}):
+    # print(f"debug find_keys_recursively: keys_to_find={keys_to_find} found_values={found_values}")
     for key, value in prompt.items():
       if key in keys_to_find:
-        found_values[key] = value
+        # print(f"debug find_keys_recursively: found key={key}")
+        if key == 'ckpt_name' and 'ckpt_path' in keys_to_find:
+          value_path = Path(value)
+          found_values['ckpt_path'] = self.cleanup_fileName(str(value_path.parent))
+          # print(f"debug find_keys_recursively: ckpt_name={value_path.name} ckpt_path={str(value_path.parent)}")
+        elif key == 'control_net_name' and 'control_net_path' in keys_to_find:
+          value_path = Path(value)
+          found_values['control_net_path'] = self.cleanup_fileName(str(value_path.parent))
+        else:
+          found_values[key] = self.cleanup_fileName(value)
       elif isinstance(value, dict):
         self.find_keys_recursively(value, keys_to_find, found_values)
   
@@ -281,6 +311,7 @@ class SaveImageExtended:
       #   'inputs': {'cfg': 1.6, 
       #     'denoise': 1.0, ...
       for key in keys_to_extract:
+        # empty comma
         if not key: continue
         
         value = None
@@ -288,7 +319,7 @@ class SaveImageExtended:
         
         # check if this is a subfolder: starts with ./ or /, can also end with /
         # we also exclude datetime formats like "%A %d. %B %Y"
-        if '/' in key and not '%' in key:
+        if os.sep in key and not '%' in key:
           # key is a subfolder: ./subfolder or ../subfolder or /subfolder
           value = key
         else:
@@ -305,13 +336,23 @@ class SaveImageExtended:
                 if node in prompt:
                   # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
                   # splitKey[0] = #node number found in prompt, we will recurse only in that node:
-                  self.find_keys_recursively(prompt[node], [nodeKey], found_values)
+                  if nodeKey == 'ckpt_path':
+                    self.find_keys_recursively(prompt[node], ['ckpt_name', nodeKey], found_values)
+                  elif nodeKey == 'control_net_path':
+                    self.find_keys_recursively(prompt[node], ['control_net_name', nodeKey], found_values)
+                  else:
+                    self.find_keys_recursively(prompt[node], [nodeKey], found_values)
                 else:
-                  # if splitKey[0] = #num node not found in prompt; #num could have changed or user made a typo
+                  # if splitKey[0] = #num node not found in prompt; #num could have changed or user made a typo. Fallback to normal key search
                   print(f"SaveImageExtended info: node #{node} not found")
-                  self.find_keys_recursively(prompt, [nodeKey], found_values)
+                  if nodeKey == 'ckpt_path':
+                    self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
+                  elif nodeKey == 'control_net_path':
+                    self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+                  else:
+                    self.find_keys_recursively(prompt, [nodeKey], found_values)
               else:
-                # key is in the form string.string = fixed string
+                # key is in the form string.string = fixed string; still, we remove extra stuff and known extensions
                 value = self.cleanup_fileName(key)
             else:
               # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is, maybe it's a separator
@@ -323,20 +364,24 @@ class SaveImageExtended:
             # nodeKey is not a datetime, folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
             else:
               nodeKey = key
-              self.find_keys_recursively(prompt, [nodeKey], found_values)
+              if nodeKey == 'ckpt_path':
+                self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
+              elif nodeKey == 'control_net_path':
+                self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+              else:
+                self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
         # is key subfolder
         
         # at this point we have a nodeKey, or a value, or both
-        # print(f"debug generate_custom_name: ----key:   {nodeKey}")
-        # print(f"debug generate_custom_name: ----value: {value}")
+        # print(f"debug generate_custom_name: ----nodeKey:      {nodeKey}")
+        # print(f"debug generate_custom_name: ----value:        {value}")
+        # print(f"debug generate_custom_name: ----found_values: {found_values}")
         if value is None:
           if nodeKey is not None:
             if nodeKey in found_values: value = found_values[nodeKey]
             if value is None:
               value = nodeKey
-            else:
-              value = self.cleanup_fileName(value)
         
         # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
@@ -346,14 +391,32 @@ class SaveImageExtended:
         # now we build the custom_name:
         if isinstance(value, str):
           # prefix and keys can very well be subfolders ending or starting with a /
-          if custom_name.endswith('/'):
+          if custom_name.endswith(os.sep):
             # for subfolders, do not start filename with a delimiter...
             delim = ''
           else:
             # for subfolders in keys, do not clean the filename...
-            if '/' in value and not value.endswith('/'):
+            # print(f"debug generate_custom_name: ---------: {os.sep} in value? {nodeKey}={value}")
+            if os.sep in value and not value.endswith(os.sep):
               # print(f"debug generate_custom_name: ---------: folder")
               delim= ''
+              
+              # now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
+              # the recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
+              if nodeKey in ['ckpt_path', 'control_net_path']:
+                # smth_path is most likely placed before smth_name, therefore value cannot be resolved during the previous check
+                value = found_values[nodeKey]
+                # and indeed we bypass anything that does not have a subfolder
+                if value == '.':
+                  continue
+                else:
+                  # terminate the subfolder with os.sep so it creates an actual subfolder. 
+                  # Because find_keys_recursively will only return the path part: 'path' or 'path/subpath'
+                  # Therefore, enclosing this value with os.sep ensure we get a subfolder
+                  value = os.sep + value + os.sep
+              else:
+                value = self.cleanup_fileName(value)
+
           # ".string" case
           if value.startswith('.'):
             delim = ''
@@ -364,7 +427,7 @@ class SaveImageExtended:
         custom_name += f"{delim}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
       # for each key
-    return custom_name.strip(delimiter).strip('.').strip('/').strip(delimiter)
+    return custom_name.strip(delimiter).strip('.').strip(os.sep).strip(delimiter)
   
   
   def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename, timestamp=datetime.now()):
@@ -540,9 +603,12 @@ class SaveImageExtended:
     return exif_dat
   
   
-  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=90):
+  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality):
     # print(f"debug save_images: image_path={image_path}")
-    output_ext = os.path.splitext(os.path.basename(image_path))[1]
+    if quality == 0:
+      quality = self.quality
+    # output_ext = os.path.splitext(os.path.basename(image_path))[1]
+    output_ext = Path(image_path).suffix
     metadata = None
     kwargs = dict()
     
@@ -606,18 +672,22 @@ class SaveImageExtended:
       positive_text_opt=None,
       extra_pnginfo=None,
       prompt=None,
-      quality=75,
+      quality=quality,
     ):
     
-    # print(f"filename_prefix = x{filename_prefix}x")
-    # print(f"filename_keys = x{filename_keys}x")
-    # print(f"foldername_prefix = x{foldername_prefix}x")
-    # print(f"foldername_keys = x{foldername_keys}x")
-    # print(f"delimiter = x{delimiter}x")
-    # print(f"save_job_data = x{save_job_data}x")
-    # print(f"job_data_per_image = x{job_data_per_image}x")
-    # print(f"output_ext = x{output_ext}x")
+    # print(f"save_images filename_prefix = x{filename_prefix}x")
+    # print(f"save_images filename_keys = x{filename_keys}x")
+    # print(f"save_images foldername_prefix = x{foldername_prefix}x")
+    # print(f"save_images foldername_keys = x{foldername_keys}x")
+    # print(f"save_images delimiter = x{delimiter}x")
+    # print(f"save_images save_job_data = x{save_job_data}x")
+    # print(f"save_images job_data_per_image = x{job_data_per_image}x")
+    # print(f"save_images output_ext = x{output_ext}x")
+    # print(f"save_images quality = x{quality}x")
 
+    # bugfix: sometimes on load, quality == 0
+    if quality == 0: quality = self.quality
+    
     # apply default values: we replicate the default save image box
     if not filename_prefix and not filename_keys: filename_prefix=self.filename_prefix
     if delimiter: delimiter = delimiter[0]
@@ -629,8 +699,8 @@ class SaveImageExtended:
     # pprint.pprint(prompt)
     ##########################################################################
     timestamp = datetime.now()
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp)
     custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp)
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp)
     
     # Get set resolution value
     i = 255. * images[0].cpu().numpy()
@@ -639,11 +709,17 @@ class SaveImageExtended:
     
     # Create folders, count images, save images
     try:
-      full_output_folder, filename, _, _, custom_filename = folder_paths.get_save_image_path(custom_filename, self.output_dir, images[0].shape[1], images[0].shape[0])
-      output_path = os.path.join(full_output_folder, custom_foldername)
-      # print(f"debug save_images: full_output_folder={full_output_folder}")
-      # print(f"debug save_images: custom_foldername={custom_foldername}")
-      # print(f"debug save_images: output_path={output_path}")
+      # folder_paths.get_save_image_path() is kind of magic, I don't like that. Outpout is wrong anyway, when custom_filename contains folders
+      # full_output_folder, filename, _, _, custom_filename = folder_paths.get_save_image_path(custom_filename, self.output_dir, images[0].shape[1], images[0].shape[0])
+      # output_path = os.path.join(full_output_folder, custom_foldername)
+
+      output_path = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).parent
+      filename    = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).name
+      # print(f"debug save_images: custom_foldername=  {custom_foldername}")
+      # print(f"debug save_images: custom_filename=    {custom_filename}")
+      # print(f"debug save_images: output_path=        {output_path}")
+      # print(f"debug save_images: filename=           {filename}")
+      
       os.makedirs(output_path, exist_ok=True)
       counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
       # print(f"debug save_images: counter for {output_ext}: {counter}")
@@ -654,18 +730,18 @@ class SaveImageExtended:
         img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
         
         if counter_position == 'last':
-          file = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
+          image_name = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
         else:
-          file = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
+          image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         
-        image_path = os.path.join(output_path, file)
+        image_path = os.path.join(output_path, image_name)
         self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo, quality)
         
         if save_job_data != 'disabled' and job_data_per_image:
-          self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{file.removesuffix(output_ext)}.json', timestamp)
+          self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{image_name.removesuffix(output_ext)}.json', timestamp)
         
         subfolder = self.get_subfolder_path(image_path, self.output_dir)
-        results.append({ 'filename': file, 'subfolder': subfolder, 'type': self.type})
+        results.append({ 'filename': image_name, 'subfolder': subfolder, 'type': self.type})
         counter += 1
       
       if save_job_data != 'disabled' and not job_data_per_image:

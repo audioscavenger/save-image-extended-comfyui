@@ -6,4 +6,6 @@ commit.*
 *.url
 *.lnk
 desktop.ini
+*.code-workspace
+
 __pycache__/

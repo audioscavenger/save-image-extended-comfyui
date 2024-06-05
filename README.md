@@ -1,5 +1,5 @@
 # 💾 Save Image Extended for ComfyUI
-Save as JXL, AVIF, WebP, JPEG, JPEG2000, customize the folder, sub-folders, and filenames of your images!
+Save as JXL, AVIF, WebP, JPEG, JPEG2k, customize the folder, sub-folders, and filenames of your images!
 
 Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 
@@ -38,9 +38,14 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `image_preview` | Turns the image preview on and off. |
 | `output_ext` |  File extension: PNG by default, or WEBP (coming soon). |
 
-Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings: if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
 
-Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc
+- Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings
+  - if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
+- Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc
+- default it output only the **name** for `ckpt_name` and `control_net_name`
+  - use `ckpt_path` or `control_net_path` in case you have subfolders for those and want to use them as subfolders
+- using `.custom_string` will prevent appending delimiter, the dot will be the delimiter
+
 
 ## Node inputs
 
@@ -175,6 +180,11 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.73 💾
+- added ckpt_path and control_net_path in case you have subfolders for those: default it output only the name
+- complete fix of save_images() which allows for use of subfolders in filename_keys
+- tried VALIDATE_INPUTS() but all it does is checking 1 single value, no correction
 
 ### release 2.70 💾
 - added JPEG-XL
