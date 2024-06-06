@@ -176,10 +176,14 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 
 TODO:
 
+- [ ] accept multiple images as input
 - [ ] improve get_latest_counter: restarts when user renames files after the counter part.
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.74 💾
+- updated help popup and minor cosmetic fixes
 
 ### release 2.73 💾
 - added ckpt_path and control_net_path in case you have subfolders for those: default it output only the name

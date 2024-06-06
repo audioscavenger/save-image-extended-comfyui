@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.73
+version = 2.74
 
 avif_supported = False
 jxl_supported = False
@@ -20,10 +20,10 @@ jxl_supported = False
 try:
   import pillow_avif
 except:
-  print(f"\033[92m[save_image_extended]\033[0m AVIF is not supported. To add it: pip install pillow pillow-avif-plugin\033[0m") 
+  print(f"\033[92m[💾 save_image_extended]\033[0m AVIF is not supported. To add it: pip install pillow pillow-avif-plugin\033[0m") 
   pass
 else:
-  print(f"\033[92m[save_image_extended] AVIF   is supported! Woohoo!\033[0m") 
+  print(f"\033[92m[💾 save_image_extended] AVIF   is supported! Woohoo!\033[0m") 
   avif_supported = True
 
 # Jxl requires jxlpy wheel to be compiled, and a valid MSVC environment, which is complex task
@@ -33,11 +33,11 @@ try:
   # from imagecodecs import (jpegxl_encode, jpegxl_decode, jpegxl_check, jpegxl_version, JPEGXL)
   import pillow_jxl
 except:
-  print(f"\033[92m[save_image_extended]\033[0m JXL is not supported. To add it: pip install jxlpy\033[0m") 
-  print(f"\033[92m[save_image_extended]\033[0m                       You will need a valid MSVC env to build the wheel\033[0m") 
+  print(f"\033[92m[💾 save_image_extended]\033[0m JXL is not supported. To add it: pip install jxlpy\033[0m") 
+  print(f"\033[92m[💾 save_image_extended]\033[0m                       You will need a valid MSVC env to build the wheel\033[0m") 
   pass
 else:
-  print(f"\033[92m[save_image_extended] JPEGXL is supported! YeePee!\033[0m") 
+  print(f"\033[92m[💾 save_image_extended] JPEGXL is supported! YeePee!\033[0m") 
   jxl_supported = True
 
 # PIL must be loaded after pillow plugins
@@ -55,14 +55,31 @@ class SaveImageExtended:
   OUTPUT_NODE = True
   CATEGORY = 'image'
   DESCRIPTION = """
-### subfolders:
-- you can use / or ./ or even ../ to start from parent
-- you can also use / as the separator
-- if your widget name has subfolders like SDXL/whatnot, you will have subfolders too
-### Sample datetime formats: see [man datetime](https://www.man7.org/linux/man-pages/man1/date.1.html)
+## Advice
+It is strongly advised to enable Badge numbers in the Manager: _#ID Nickname_
+
+### Default behavior
+- Workflows with multiple of the same node:
+  - if you don't specify the node number in your keys like _13.sampler_name_, 
+  - then the highest node number value will be returned
+- if your checkpoint/controlnet is in subfolders like SDXL/whatnot, `ckpt_name` will **not** have subfolders
+  - to get the subfolders from controlnets and checkpoints, use _ckpt_path_ and _control_net_path_
+
+### subfolders
+- you can use `/` as the separator, or use keys such as `/name` or `name/` as a folder separator
+- you can use `/` or `./` or even `../` anywhere in your keys
+- there can be subfolders in _filename\_keys_ as well, altough it will mess the order of your keys
+
+### Datetime formats
+See [man datetime](https://www.man7.org/linux/man-pages/man1/date.1.html) for all possible values
 - %F = %Y-%m-%d = 2024-05-22
 - %H-%M-%S = 09-13-58
 - %D = 05/22/24 (subfolders)
+
+### 💾 Prompt Embedded
+Prompt and Workflows are embedded in every files except BMP.
+They are saved in Exif tags _Make_ [0x010f] and _ImageDescription_ [0x010e].
+ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
 
 """
 
@@ -98,7 +115,7 @@ class SaveImageExtended:
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
   quality                 = 90
 
-  print(f"\033[92m[save_image_extended]\033[0m version: {version}\033[0m")
+  print(f"\033[92m[💾 save_image_extended]\033[0m version: {version}\033[0m")
   if jxl_supported:
     output_exts.insert(0, '.jxl')
   # if pillow_avif not in sys.modules:
@@ -111,7 +128,7 @@ class SaveImageExtended:
     self.prefix_append = ''
   
   """
-  Return a dictionary which contains config for all input fields.
+  INPUT_TYPES Return a dictionary which contains config for all input fields.
   Some types (string): "MODEL", "VAE", "CLIP", "CONDITIONING", "LATENT", "IMAGE", "INT", "STRING", "FLOAT".
   Input types "INT", "STRING" or "FLOAT" are special values for fields on the node.
   The type can be a list for selection.
