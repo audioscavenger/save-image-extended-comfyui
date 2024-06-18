@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.74
+version = 2.75
 
 avif_supported = False
 jxl_supported = False
@@ -114,6 +114,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
   output_ext              = '.webp'
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
   quality                 = 90
+  named_keys              = False
 
   print(f"\033[92m[💾 save_image_extended]\033[0m version: {version}\033[0m")
   if jxl_supported:
@@ -181,6 +182,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
           "step": 1,
           "display": "silder"
          }),
+        'named_keys': ('BOOLEAN', {'default': self.named_keys}),
       },
       'optional': {
         'positive_text_opt': ('STRING', {'forceInput': True}),
@@ -308,7 +310,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
   # Fractions and Superscripts  '⅔','2²'  False       True      True
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
-  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now()):
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now(), named_keys=False):
     if '%' in prefix:
       custom_name = timestamp.strftime(prefix)
     else:
@@ -396,9 +398,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         # print(f"debug generate_custom_name: ----found_values: {found_values}")
         if value is None:
           if nodeKey is not None:
-            if nodeKey in found_values: value = found_values[nodeKey]
-            if value is None:
-              value = nodeKey
+            if nodeKey in found_values:
+              if named_keys:
+                value = f"{nodeKey}={found_values[nodeKey]}"
+              else:
+                value = found_values[nodeKey]
+            if value is None: value = nodeKey
+          
         
         # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
@@ -418,8 +424,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
               # print(f"debug generate_custom_name: ---------: folder")
               delim= ''
               
-              # now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
-              # the recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
+              # Now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
+              # The recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
               if nodeKey in ['ckpt_path', 'control_net_path']:
                 # smth_path is most likely placed before smth_name, therefore value cannot be resolved during the previous check
                 value = found_values[nodeKey]
@@ -577,9 +583,10 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     # exif[ExifTags.Base.UserComment] = dump
     
     ## It seems better to separate the two
-    # 0x010e: ImageDescription
-    # 0x010f: Make
-    # 0x9286: UserComment
+    # 0x010d: DocumentName      Parameters (SD)
+    # 0x010e: ImageDescription  Workflow
+    # 0x010f: Make              Prompt
+    # 0x9286: UserComment       cancelled
     # both prompt and workflow must be in IFD close together of that can cause problems for the parseIFD function on import
     # https://exiftool.org/TagNames/EXIF.html
     # exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
@@ -690,6 +697,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       extra_pnginfo=None,
       prompt=None,
       quality=quality,
+      named_keys=named_keys,
     ):
     
     # print(f"save_images filename_prefix = x{filename_prefix}x")
@@ -716,8 +724,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     # pprint.pprint(prompt)
     ##########################################################################
     timestamp = datetime.now()
-    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp)
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp)
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp, named_keys)
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp, named_keys)
     
     # Get set resolution value
     i = 255. * images[0].cpu().numpy()

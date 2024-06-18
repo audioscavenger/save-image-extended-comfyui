@@ -37,6 +37,8 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `one_counter_per_folder` | Toggles the counter. Either one counter per folder, or resets when a parameter/prompt changes. |
 | `image_preview` | Turns the image preview on and off. |
 | `output_ext` |  File extension: PNG by default, or WEBP (coming soon). |
+| `quality` |  Quality for JPEG/JXL/WebP/AVIF/J2K formats; default 90 (AVIF only needs 60 for same results). |
+| `named_keys` |  Prefix each value by its key name: prefix-seed=123456-width=1024-etc-0001.avif |
 
 
 - Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings
@@ -181,6 +183,9 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.75 💾
+- Prefix each value by its key name: prefix-seed=123456-width=1024-etc-0001.avif
 
 ### release 2.74 💾
 - updated help popup and minor cosmetic fixes

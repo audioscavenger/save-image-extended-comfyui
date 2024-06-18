@@ -61,6 +61,7 @@ export function getResolver(timeout = 5000) {
     }, timeout);
     return resolver;
 }
+
 export function wait(ms = 16, value) {
     if (ms === 16) {
         return new Promise((resolve) => {
@@ -73,14 +74,17 @@ export function wait(ms = 16, value) {
         }, ms);
     });
 }
+
 function dec2hex(dec) {
     return dec.toString(16).padStart(2, "0");
 }
+
 export function generateId(length) {
     const arr = new Uint8Array(length / 2);
     crypto.getRandomValues(arr);
     return Array.from(arr, dec2hex).join("");
 }
+
 export function getObjectValue(obj, objKey, def) {
     if (!obj || !objKey)
         return def;
@@ -92,6 +96,7 @@ export function getObjectValue(obj, objKey, def) {
     }
     return found;
 }
+
 export function setObjectValue(obj, objKey, value, createMissingObjects = true) {
     if (!obj || !objKey)
         return obj;
@@ -114,14 +119,17 @@ export function setObjectValue(obj, objKey, value, createMissingObjects = true) 
     }
     return obj;
 }
+
 export function moveArrayItem(arr, itemOrFrom, to) {
     const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
     arr.splice(to, 0, arr.splice(from, 1)[0]);
 }
+
 export function removeArrayItem(arr, itemOrIndex) {
     const index = typeof itemOrIndex === "number" ? itemOrIndex : arr.indexOf(itemOrIndex);
     arr.splice(index, 1);
 }
+
 export function injectCss(href) {
     if (document.querySelector(`link[href^="${href}"]`)) {
         return Promise.resolve();
@@ -139,6 +147,7 @@ export function injectCss(href) {
         document.head.appendChild(link);
     });
 }
+
 export function injectJs(href) {
     if (document.querySelector(`script[src^="${href}"]`)) {
         return Promise.resolve();
@@ -155,3 +164,4 @@ export function injectJs(href) {
         document.head.appendChild(script);
     });
 }
+
