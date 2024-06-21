@@ -310,7 +310,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
   # Fractions and Superscripts  '⅔','2²'  False       True      True
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
-  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now(), named_keys=False):
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now(), named_keys=False, resolution=None):
     if '%' in prefix:
       custom_name = timestamp.strftime(prefix)
     else:
@@ -341,6 +341,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         if os.sep in key and not '%' in key:
           # key is a subfolder: ./subfolder or ../subfolder or /subfolder
           value = key
+        elif key == 'resolution' and resolution is not None:
+          value = resolution
         else:
           splitKey = key.split('.')
           # we also exclude cases like "..string" or "sting.string.x" etc
@@ -723,14 +725,16 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     ################################## UNCOMMENT HERE TO SEE THE ENTIRE PROMPT
     # pprint.pprint(prompt)
     ##########################################################################
-    timestamp = datetime.now()
-    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp, named_keys)
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp, named_keys)
-    
     # Get set resolution value
     i = 255. * images[0].cpu().numpy()
     img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
     resolution = f'{img.width}x{img.height}'
+
+    timestamp = datetime.now()
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp, named_keys, resolution)
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp, named_keys, resolution)
+    
+    
     
     # Create folders, count images, save images
     try:
