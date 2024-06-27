@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.75
+version = 2.76
 
 avif_supported = False
 jxl_supported = False
@@ -310,7 +310,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
   # Fractions and Superscripts  '⅔','2²'  False       True      True
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
-  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, timestamp=datetime.now(), named_keys=False):
+  def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, resolution, timestamp=datetime.now(), named_keys=False):
     if '%' in prefix:
       custom_name = timestamp.strftime(prefix)
     else:
@@ -387,6 +387,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
                 self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
               elif nodeKey == 'control_net_path':
                 self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+              elif nodeKey == 'resolution':
+                value = resolution
               else:
                 self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
@@ -723,14 +725,14 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     ################################## UNCOMMENT HERE TO SEE THE ENTIRE PROMPT
     # pprint.pprint(prompt)
     ##########################################################################
-    timestamp = datetime.now()
-    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, timestamp, named_keys)
-    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, timestamp, named_keys)
-    
-    # Get set resolution value
+    # Get set resolution value - that's a secret keyword
     i = 255. * images[0].cpu().numpy()
     img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
     resolution = f'{img.width}x{img.height}'
+    
+    timestamp = datetime.now()
+    custom_foldername = self.generate_custom_name(foldername_keys_to_extract, foldername_prefix, delimiter, prompt, resolution, timestamp, named_keys)
+    custom_filename = self.generate_custom_name(filename_keys_to_extract, filename_prefix, delimiter, prompt, resolution, timestamp, named_keys)
     
     # Create folders, count images, save images
     try:

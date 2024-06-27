@@ -184,6 +184,9 @@ TODO:
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
 
+### release 2.76 💾
+- brought back resolution
+
 ### release 2.75 💾
 - Prefix each value by its key name: prefix-seed=123456-width=1024-etc-0001.avif
 
