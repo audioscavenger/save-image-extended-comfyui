@@ -2,7 +2,7 @@
 name = "save-image-extended-comfyui"
 description = "Save as JXL, AVIF, WebP, JPEG, JPEG2k, customize the folder, sub-folders, and filenames of your images!"
 version = "2.76"
-license = "LICENCE"
+license = { file = "LICENSE" }
 dependencies = ["piexif", "imagecodecs", "pillow", "pillow-avif-plugin", "pillow-jxl-plugin"]
 
 [project.urls]
