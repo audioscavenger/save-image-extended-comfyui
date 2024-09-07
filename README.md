@@ -26,7 +26,7 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `filename_prefix` |  String prefix added to files. |
 | `filename_keys` | Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object they should work. The same applies to `foldername_keys`. |
 | `foldername_prefix` | String prefix added to folders. |
-| `foldername_keys` | Comma separated string with _sampler_ parameters to add to foldername. Add more subfolders by prepending "./" to the key name. |
+| `foldername_keys` | Comma separated string with _sampler_ parameters to add to foldername. Add more subfolders by writing a "./" separated with commas. For example: `sampler_name, ./, ckpt_name` |
 | `delimiter` | **now a free field** Delimiter = 1 character, can be anything your file system supports. Windows users should still use "/" for subfolders. |
 | `save_job_data` | If enabled, saves information about each job as entries in a `jobs.json` text file, inside the generated folder. Mulitple options for saving `prompt`, `basic data`, `sampler settings`, `loaded models`. |
 | `job_data_per_image` | When enabled, saves individual job data files for each image. |
