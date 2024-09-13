@@ -10,6 +10,7 @@ import folder_paths
 import pprint
 import piexif
 import piexif.helper
+import csv
 
 version = 2.76
 
@@ -767,6 +768,11 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         if save_job_data != 'disabled' and job_data_per_image:
           self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{image_name.removesuffix(output_ext)}.json', timestamp)
         
+        output_csv = 'image_data.csv'
+        if filename_prefix is not None:
+          output_csv = f'{filename_prefix}_{output_csv}'
+        self.save_output_to_csv(image_name, positive_text_opt, output_path, output_csv)
+
         subfolder = self.get_subfolder_path(image_path, self.output_dir)
         results.append({ 'filename': image_name, 'subfolder': subfolder, 'type': self.type})
         counter += 1
@@ -780,6 +786,18 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       if not image_preview:
         results = list()
       return { 'ui': { 'images': results } }
+
+
+  def save_output_to_csv(self, image_name, image_prompt, output_dir, output_csv='output.csv'):
+    csv_path = os.path.join(output_dir, output_csv)
+    if not os.path.exists(csv_path):
+      with open(csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['filename', 'prompt'])
+
+    with open(csv_path, 'a', newline='') as f:
+      writer = csv.writer(f)
+      writer.writerow([image_name, image_prompt.replace('"', '')])
 
 
 NODE_CLASS_MAPPINGS = {
