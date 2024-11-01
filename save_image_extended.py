@@ -253,13 +253,19 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     for key, value in prompt.items():
       if key in keys_to_find:
         # print(f"debug find_keys_recursively: found key={key}")
-        if key == 'ckpt_name' and 'ckpt_path' in keys_to_find:
+        if key == 'ckpt_name':
           value_path = Path(value)
-          found_values['ckpt_path'] = self.cleanup_fileName(str(value_path.parent))
+          if 'ckpt_path' in keys_to_find:
+            found_values['ckpt_path'] = self.cleanup_fileName(str(value_path.parent))
+          else:
+            found_values['ckpt_name'] = self.cleanup_fileName(str(value_path.name))
           # print(f"debug find_keys_recursively: ckpt_name={value_path.name} ckpt_path={str(value_path.parent)}")
-        elif key == 'control_net_name' and 'control_net_path' in keys_to_find:
+        elif key == 'control_net_name':
           value_path = Path(value)
-          found_values['control_net_path'] = self.cleanup_fileName(str(value_path.parent))
+          if 'control_net_path' in keys_to_find:
+            found_values['control_net_path'] = self.cleanup_fileName(str(value_path.parent))
+          else:
+            found_values['control_net_name'] = self.cleanup_fileName(str(value_path.name))
         else:
           found_values[key] = self.cleanup_fileName(value)
       elif isinstance(value, dict):
