@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.76
+version = 2.77
 
 avif_supported = False
 jxl_supported = False
@@ -63,7 +63,7 @@ It is strongly advised to enable Badge numbers in the Manager: _#ID Nickname_
   - if you don't specify the node number in your keys like _13.sampler_name_, 
   - then the highest node number value will be returned
 - if your checkpoint/controlnet is in subfolders like SDXL/whatnot, `ckpt_name` will **not** have subfolders
-  - to get the subfolders from controlnets and checkpoints, use _ckpt_path_ and _control_net_path_
+  - to get the subfolders from controlnets and checkpoints, add _ckpt_path_ and _control_net_path_ in *addition* to _ckpt_name_ or _control_net_name_
 
 ### subfolders
 - you can use `/` as the separator, or use keys such as `/name` or `name/` as a folder separator
@@ -453,7 +453,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
             delim = ''
         
         if isinstance(value, float):
-          value = round(float(value), 1)
+          # value = round(float(value), 1)  # too much rounding
+          value = float(f'{value:.10g}')
         
         custom_name += f"{delim}{value}"
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
