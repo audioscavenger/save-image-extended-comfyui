@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.77
+version = 2.78
 
 avif_supported = False
 jxl_supported = False
@@ -56,19 +56,20 @@ class SaveImageExtended:
   CATEGORY = 'image'
   DESCRIPTION = """
 ## Advice
-It is strongly advised to enable Badge numbers in the Manager: _#ID Nickname_
+You must enable Badge numbers in the Manager if you have duplicate nodes: _#ID Nickname_
 
 ### Default behavior
 - Workflows with multiple of the same node:
   - if you don't specify the node number in your keys like _13.sampler_name_, 
   - then the highest node number value will be returned
 - if your checkpoint/controlnet is in subfolders like SDXL/whatnot, `ckpt_name` will **not** have subfolders
-  - to get the subfolders from controlnets and checkpoints, add _ckpt_path_ and _control_net_path_ in *addition* to _ckpt_name_ or _control_net_name_
+  - to get the subfolders from controlnets and checkpoints, add _ckpt_path_ or _control_net_path_ in *addition* to _ckpt_name_ or _control_net_name_
 
 ### subfolders
-- you can use `/` as the separator, or use keys such as `/name` or `name/` as a folder separator
-- you can use `/` or `./` or even `../` anywhere in your keys
-- there can be subfolders in _filename\_keys_ as well, altough it will mess the order of your keys
+- you can use `/` or `./` or even `../`
+- you can prepend `/` to your key such as `/sampler_name` or `/12.sampler_name`
+- you can use subfolders in _filename\_keys_ as well
+- trailing `/` will be removed
 
 ### Datetime formats
 See [man datetime](https://www.man7.org/linux/man-pages/man1/date.1.html) for all possible values
@@ -78,8 +79,8 @@ See [man datetime](https://www.man7.org/linux/man-pages/man1/date.1.html) for al
 
 ### 💾 Prompt Embedded
 Prompt and Workflows are embedded in every files except BMP.
-They are saved in Exif tags _Make_ [0x010f] and _ImageDescription_ [0x010e].
-ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
+Prompt and Workflows are saved in Exif tags _Make_ [0x010f] and _ImageDescription_ [0x010e].
+ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dropped when they implemented audio files in Summer 2024.
 
 """
 
@@ -110,7 +111,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
   counter_positions       = ['last', 'first']
   one_counter_per_folder  = True
   image_preview           = True
-  extToRemove             = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
+  modelExtensions         = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
   quality                 = 90
@@ -220,6 +221,14 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     return str(subfolder_path)
   
   
+
+
+  #  ██████  ██████  ██    ██ ███    ██ ████████ ███████ ██████  
+  # ██      ██    ██ ██    ██ ████   ██    ██    ██      ██   ██ 
+  # ██      ██    ██ ██    ██ ██ ██  ██    ██    █████   ██████  
+  # ██      ██    ██ ██    ██ ██  ██ ██    ██    ██      ██   ██ 
+  #  ██████  ██████   ██████  ██   ████    ██    ███████ ██   ██ 
+
   # Get current counter number from file names
   def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits=counter_digits, counter_position=counter_position, output_ext=output_ext):
     counter = 1
@@ -253,18 +262,18 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     for key, value in prompt.items():
       if key in keys_to_find:
         # print(f"debug find_keys_recursively: found key={key}")
-        if key == 'ckpt_name':
+        if key in ['ckpt_path','ckpt_name']:
           value_path = Path(value)
           if 'ckpt_path' in keys_to_find:
             found_values['ckpt_path'] = self.cleanup_fileName(str(value_path.parent))
-          else:
+          elif 'ckpt_name' in keys_to_find:
             found_values['ckpt_name'] = self.cleanup_fileName(str(value_path.name))
           # print(f"debug find_keys_recursively: ckpt_name={value_path.name} ckpt_path={str(value_path.parent)}")
-        elif key == 'control_net_name':
+        elif key in ['control_net_path','control_net_name']:
           value_path = Path(value)
           if 'control_net_path' in keys_to_find:
             found_values['control_net_path'] = self.cleanup_fileName(str(value_path.parent))
-          else:
+          elif 'control_net_name' in keys_to_find:
             found_values['control_net_name'] = self.cleanup_fileName(str(value_path.name))
         else:
           found_values[key] = self.cleanup_fileName(value)
@@ -272,7 +281,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         self.find_keys_recursively(value, keys_to_find, found_values)
   
   
-  def cleanup_fileName(self, file='', extToRemove=extToRemove):
+  def cleanup_fileName(self, file='', extToRemove=modelExtensions):
     if isinstance(file, str):
       # takes care of all the possible safetensor extensions under the sun
       # cannot do that... maybe the user want a string.string fixed value to use, that does not end with extToRemove
@@ -310,17 +319,30 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     return found_values
   
   
+
+
+  # ███    ██  █████  ███    ███ ███████     ██       ██████   ██████  ██████  
+  # ████   ██ ██   ██ ████  ████ ██          ██      ██    ██ ██    ██ ██   ██ 
+  # ██ ██  ██ ███████ ██ ████ ██ █████       ██      ██    ██ ██    ██ ██████  
+  # ██  ██ ██ ██   ██ ██  ██  ██ ██          ██      ██    ██ ██    ██ ██      
+  # ██   ████ ██   ██ ██      ██ ███████     ███████  ██████   ██████  ██      
+
   # String Type                 Example   isdecimal() isdigit() isnumeric()
   # --------------------------- --------- ----------- --------- -----------
   # Base 10 Numbers             '0123'    True        True      True
   # Fractions and Superscripts  '⅔','2²'  False       True      True
   # Roman Numerals              'ↁ'       False       False     True
   # --------------------------- --------- ----------- --------- -----------
+  # def generate_custom_name: (self, keys_to_extract, prefix, delimiter, prompt, resolution, timestamp=datetime.now(), named_keys=False):
   def generate_custom_name(self, keys_to_extract, prefix, delimiter, prompt, resolution, timestamp=datetime.now(), named_keys=False):
-    if '%' in prefix:
-      custom_name = timestamp.strftime(prefix)
-    else:
-      custom_name = prefix
+    custom_name = []
+
+    # only filename has prefix
+    if prefix:
+      if '%' in prefix:
+        custom_name.append(timestamp.strftime(prefix))
+      else:
+        custom_name.append(prefix)
     
     if prompt is not None and keys_to_extract != ['']:
       found_values = {}
@@ -342,16 +364,32 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         value = None
         node, nodeKey = None, None
         
-        # check if this is a subfolder: starts with ./ or /, can also end with /
-        # we also exclude datetime formats like "%A %d. %B %Y"
-        if os.sep in key and not '%' in key:
-          # key is a subfolder: ./subfolder or ../subfolder or /subfolder
+        # datetime format
+        if '%' in key:
+          value = timestamp.strftime(key)
+        
+        # check if there is an os.sep involved, cleanup the key
+        if '/' in key:
+          # key is a subfolder: ./key or ../key or /key ==> last / is removed
+          values = re.split('/+', key)
+          # we will strip the last / in all cases
+          if values[0] in ['','.','..']:
+            custom_name.append(values[0]+'/')
+            key = values[1]
+            # was it just a folder separator?
+            if not key: continue
+          else:
+            key = values[0]
+
+        # fixed string:
+        if (key.startswith("'") and key.endswith("'")) or (key.startswith('"') and key.endswith('"')):
           value = key
-        else:
+
+        # is it num.key ?
+        if value is None:
           splitKey = key.split('.')
           # we also exclude cases like "..string" or "sting.string.x" etc
-          # we also exclude datetime formats like "%A %d. %B %Y"
-          if len(splitKey) == 2 and not '%' in key:
+          if len(splitKey) == 2:
             # key has the form string.string
             if '' not in splitKey:
               # key has the form string.string
@@ -382,24 +420,21 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
             else:
               # key is in the form ".string" or "string." or "." - we won't clean that up and keep as is, maybe it's a separator
               value = key
+          
+          # key is not a datetime, folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
           else:
-            # could be a datetime format
-            if '%' in key:
-              value = timestamp.strftime(key)
-            # nodeKey is not a datetime, folder, has no dot, or multiple dots, could be a valid key to find, could be a fixed string - keep as is
+            nodeKey = key
+            if nodeKey == 'ckpt_path':
+              self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
+            elif nodeKey == 'control_net_path':
+              self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+            elif nodeKey == 'resolution':
+              value = resolution
             else:
-              nodeKey = key
-              if nodeKey == 'ckpt_path':
-                self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
-              elif nodeKey == 'control_net_path':
-                self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
-              elif nodeKey == 'resolution':
-                value = resolution
-              else:
-                self.find_keys_recursively(prompt, [nodeKey], found_values)
+              self.find_keys_recursively(prompt, [nodeKey], found_values)
           # is key num.widget_name
-        # is key subfolder
-        
+        # value was None
+          
         # at this point we have a nodeKey, or a value, or both
         # print(f"debug generate_custom_name: ----nodeKey:      {nodeKey}")
         # print(f"debug generate_custom_name: ----value:        {value}")
@@ -417,51 +452,49 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
         # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
         # print(f"debug generate_custom_name: ----value: {value}")
-        delim = delimiter
         
         # now we build the custom_name:
         if isinstance(value, str):
           # prefix and keys can very well be subfolders ending or starting with a /
-          if custom_name.endswith(os.sep):
-            # for subfolders, do not start filename with a delimiter...
-            delim = ''
+          # for subfolders in keys, do not clean the filename...
+          # print(f"debug generate_custom_name: ---------: / in value? {nodeKey}={value}")
+          
+          # Now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
+          # The recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
+          if nodeKey in ['ckpt_path', 'control_net_path']:
+            # smth_path is most likely placed before smth_name, therefore value cannot be resolved during the previous check
+            value = found_values[nodeKey]
           else:
-            # for subfolders in keys, do not clean the filename...
-            # print(f"debug generate_custom_name: ---------: {os.sep} in value? {nodeKey}={value}")
-            if os.sep in value and not value.endswith(os.sep):
-              # print(f"debug generate_custom_name: ---------: folder")
-              delim= ''
-              
-              # Now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
-              # The recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
-              if nodeKey in ['ckpt_path', 'control_net_path']:
-                # smth_path is most likely placed before smth_name, therefore value cannot be resolved during the previous check
-                value = found_values[nodeKey]
-                # and indeed we bypass anything that does not have a subfolder
-                if value == '.':
-                  continue
-                else:
-                  # terminate the subfolder with os.sep so it creates an actual subfolder. 
-                  # Because find_keys_recursively will only return the path part: 'path' or 'path/subpath'
-                  # Therefore, enclosing this value with os.sep ensure we get a subfolder
-                  value = os.sep + value + os.sep
-              else:
-                value = self.cleanup_fileName(value)
-
-          # ".string" case
-          if value.startswith('.'):
-            delim = ''
-        
-        if isinstance(value, float):
+            value = self.cleanup_fileName(value)
+        elif isinstance(value, float):
           # value = round(float(value), 1)  # too much rounding
           value = float(f'{value:.10g}')
         
-        custom_name += f"{delim}{value}"
+        custom_name.append(str(value))
         # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
       # for each key
-    return custom_name.strip(delimiter).strip('.').strip(os.sep).strip(delimiter)
+    
+    # remove empty values
+    custom_name = list(filter(None, custom_name))
+    # join
+    stringName = delimiter.join(custom_name).replace('/'+delimiter, '/').replace(delimiter+'/', '/').replace(delimiter+'.', '.')
+    # clean
+    stringName = stringName.strip(delimiter).strip('/').strip(delimiter).strip('.')
+
+    print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+    print(f"debug generate_custom_name: ------stringName:  {stringName}")
+    return re.sub(r'[*?:"<>|]','',stringName).replace('/', os.sep)
   
   
+  
+
+
+  #      ██ ███████  ██████  ███    ██ 
+  #      ██ ██      ██    ██ ████   ██ 
+  #      ██ ███████ ██    ██ ██ ██  ██ 
+  # ██   ██      ██ ██    ██ ██  ██ ██ 
+  #  █████  ███████  ██████  ██   ████ 
+
   def save_job_to_json(self, save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, filename, timestamp=datetime.now()):
     prompt_keys_to_save = {}
     if 'basic' in save_job_data:
@@ -556,7 +589,15 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       json.dump(existing_data, f, indent=4)
   
   
-  def get_metadata_png(self, img, prompt, extra_pnginfo=None):
+
+
+  # ██████  ███    ██  ██████  
+  # ██   ██ ████   ██ ██       
+  # ██████  ██ ██  ██ ██   ███ 
+  # ██      ██  ██ ██ ██    ██ 
+  # ██      ██   ████  ██████  
+
+  def genMetadataPng(self, img, prompt, extra_pnginfo=None):
     metadata = PngInfo()
     if prompt is not None:
       metadata.add_text('prompt', json.dumps(prompt))
@@ -566,8 +607,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     
     return metadata
   
-  
-  def get_metadata_exif(self, img, prompt, extra_pnginfo=None):
+  # ███████ ██   ██ ██ ███████ 
+  # ██       ██ ██  ██ ██      
+  # █████     ███   ██ █████   
+  # ██       ██ ██  ██ ██      
+  # ███████ ██   ██ ██ ██      
+
+  def genMetadataEXIF(self, img, prompt, extra_pnginfo=None):
     metadata = {}
     if prompt is not None:
       metadata["prompt"] = prompt
@@ -634,10 +680,16 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     # exif_dat = piexif.dump(exif_dict)
 
     return exif_dat
-  
-  
-  def save_image(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality):
-    # print(f"debug save_images: image_path={image_path}")
+
+
+  # ██     ██ ██████  ██ ████████ ███████ 
+  # ██     ██ ██   ██ ██    ██    ██      
+  # ██  █  ██ ██████  ██    ██    █████   
+  # ██ ███ ██ ██   ██ ██    ██    ██      
+  #  ███ ███  ██   ██ ██    ██    ███████ 
+
+  def writeImage(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality):
+    # print(f"debug writeImage: image_path={image_path}")
     if quality == 0:
       quality = self.quality
     # output_ext = os.path.splitext(os.path.basename(image_path))[1]
@@ -649,13 +701,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
     
     if output_ext in ['.avif', '.webp', '.jxl']:
-      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       if quality == 100:
         kwargs["lossless"] = True
       else:
         kwargs["quality"] = quality
     if output_ext in ['.j2k', '.jp2', '.jpc', '.jpf', '.jpx', '.j2c']:
-      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       if quality < 100:
         kwargs["irreversible"] = True
         # there is no such thing as compression level in JPEG2000. Read https://comprimato.com/blog/2017/06/22/bitrate-control-quality-layers-jpeg2000/
@@ -664,7 +716,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       else:
         kwargs["quality"] = quality
     elif output_ext in ['.jpg', '.jpeg']:
-      if save_metadata: kwargs["exif"] = self.get_metadata_exif(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       # https://stackoverflow.com/questions/19303621/why-is-the-quality-of-jpeg-images-produced-by-pil-so-poor
       kwargs["subsampling"] = 0
       kwargs["quality"] = quality
@@ -672,7 +724,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
       # png/gif: no quality
-      if save_metadata: kwargs["pnginfo"] = self.get_metadata_png(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["pnginfo"] = self.genMetadataPng(img, prompt, extra_pnginfo)
       kwargs["compress_level"] = self.png_compress_level
       kwargs["optimize"] = self.optimize_image
     # elif output_ext in ['.bmp']:
@@ -681,8 +733,12 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
     # img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
     img.save(image_path, **kwargs)
 
-# class SaveImageExtended -------------------------------------------------------------------------------
 
+  # ███████  █████  ██    ██ ███████ 
+  # ██      ██   ██ ██    ██ ██      
+  # ███████ ███████ ██    ██ █████   
+  #      ██ ██   ██  ██  ██  ██      
+  # ███████ ██   ██   ████   ███████ 
 
   # node will never return None values, except for optional input. Impossible.
   def save_images(self,
@@ -769,7 +825,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
           image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         
         image_path = os.path.join(output_path, image_name)
-        self.save_image(image_path, img, prompt, save_metadata, extra_pnginfo, quality)
+        self.writeImage(image_path, img, prompt, save_metadata, extra_pnginfo, quality)
         
         if save_job_data != 'disabled' and job_data_per_image:
           self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{image_name.removesuffix(output_ext)}.json', timestamp)
@@ -787,6 +843,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR still not merged.
       if not image_preview:
         results = list()
       return { 'ui': { 'images': results } }
+
+# class SaveImageExtended -------------------------------------------------------------------------------
 
 
 NODE_CLASS_MAPPINGS = {
