@@ -41,13 +41,28 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `named_keys` |  Prefix each value by its key name: prefix-seed=123456-width=1024-etc-0001.avif |
 
 
-- Unknown key names in `filename_keys` and `foldername_keys` are treated as custom strings
+- Unknown key names in `filename_keys` and `foldername_keys` are treated as fixed strings
   - if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
-- Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc
-- default it output only the **name** for `ckpt_name` and `control_net_name`
-  - use `ckpt_path` or `control_net_path` in case you have subfolders for those and want to use them as subfolders
+- Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc: see [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html)
+- default it output only the **name** for `ckpt_name` and `control_net_name` not the **path**
+  - use `ckpt_path` or `control_net_path` if you need the same subfolder structure as your models
 - using `.custom_string` will prevent appending delimiter, the dot will be the delimiter
 
+### Examples
+- prefix = `PREFIX`
+- filename = `cfg, sampler_name, /steps, %F %H-%M-%S`
+- foldername = `ckpt_name/, .cfg`
+  - > `v1-5-pruned.cfg / PREFIX-8.0-euler / 20-2024-12-18 23-17-17-0001.png`
+
+- prefix = `PREFIX`
+- filename = `cfg, sampler_name, steps, %F %H-%M-%S`
+- foldername = `ckpt_name, /, cfg`
+  - > `v1-5-pruned / 8.0 / PREFIX-cfg-8.0-euler-20-2024-12-18 23-21-41-0001.png`
+
+- prefix = `PREFIX`
+- filename = `"cfg", cfg`
+- foldername = `ckpt_name, /, cfg`
+  - > `v1-5-pruned / 8.0 / PREFIX-cfg-8.0-0002.png`
 
 ## Node inputs
 
