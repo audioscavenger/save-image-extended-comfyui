@@ -184,6 +184,9 @@ TODO:
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
 
+### release 2.78 💾
+- fix 40-subdirectory-creation
+
 ### release 2.77 💾
 - fix in ckpt_path: will only build subfolders if ckpt_name is also used: https://github.com/audioscavenger/save-image-extended-comfyui/pull/38
 - fix for too much rounding of floats (did not affect actual value in prompt saved inside the image)

@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.77
+version = 2.78
 
 avif_supported = False
 jxl_supported = False
