@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import json
-import numpy as np
+import numpy
 import locale
 from datetime import datetime
 from pathlib import Path
@@ -11,7 +11,9 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.79
+# import cv2  # not paster then PIL
+
+version = 2.80
 
 avif_supported = False
 jxl_supported = False
@@ -86,6 +88,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
 
   type                    = 'output'
   
+  # BUG: PIL.Image doesn't respect compress_level value and always output max 9 compressed images when optimize_image = True
   png_compress_level      = 9
   avif_quality            = 60
   webp_quality            = 90
@@ -94,8 +97,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   j2k_quality             = 90
   # tiff_quality has no impact unless you start meddling with the compressions algorithms
   tiff_quality            = 90
-  # optimize_image only works for jpeg, with like just 2% reduction in size
-  optimize_image          = True
+  # optimize_image only works for jpeg, png anf TIFF, with like just 2% reduction in size
+  optimize_image          = False
   
   filename_prefix         = 'ComfyUI'
   filename_keys           = 'sampler_name, cfg, steps, %F %H-%M-%S'
@@ -114,6 +117,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   modelExtensions         = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
+  # quality is a lossy compression unused by PNG/tiff/gif
   quality                 = 90
   named_keys              = False
 
@@ -167,7 +171,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         'save_metadata': ('BOOLEAN', {'default': self.save_metadata}),
         'counter_digits': ('INT', {
           "default": self.counter_digits, 
-          "min": 1, 
+          "min": 0, 
           "max": 8, 
           "step": 1,
           "display": "silder"
@@ -732,7 +736,9 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       # https://stackoverflow.com/questions/19303621/why-is-the-quality-of-jpeg-images-produced-by-pil-so-poor
       kwargs["subsampling"] = 0
       kwargs["quality"] = quality
+      kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.tiff']:
+      # tiff: no quality
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
       # png/gif: no quality
@@ -744,6 +750,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       
     # img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
     img.save(image_path, **kwargs)
+
+    # Is saving image with OpenCV really faster then PIL? https://github.com/python-pillow/Pillow/issues/5986
+    # I found that it does not matter for anything smaller then 8k*8k, which Comfy cannot produce anyways.
+    # compression_level = [cv2.IMWRITE_PNG_COMPRESSION, self.png_compress_level]
+    # image_array = numpy.array(img)
+    # image_array = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+    # cv2.imwrite(image_path.replace('000','cv2'), image_array)
 
 
   # ███████  █████  ██    ██ ███████ 
@@ -802,7 +815,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     ##########################################################################
     # Get set resolution value - that's a secret keyword
     i = 255. * images[0].cpu().numpy()
-    img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+    img = Image.fromarray(numpy.clip(i, 0, 255).astype(numpy.uint8))
     resolution = f'{img.width}x{img.height}'
     
     timestamp = datetime.now()
@@ -829,12 +842,15 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       results = list()
       for image in images:
         i = 255. * image.cpu().numpy()
-        img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+        img = Image.fromarray(numpy.clip(i, 0, 255).astype(numpy.uint8))
         
-        if counter_position == 'last':
-          image_name = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
+        if counter_digits > 0:
+          if counter_position == 'last':
+            image_name = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
+          else:
+            image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
         else:
-          image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
+          image_name = f'{filename}{output_ext}'
         
         image_path = os.path.join(output_path, image_name)
         self.writeImage(image_path, img, prompt, save_metadata, extra_pnginfo, quality)

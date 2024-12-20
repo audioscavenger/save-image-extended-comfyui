@@ -198,6 +198,13 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+- [x] PIL.Image doesn ot respect compress_level value and always output max 9 compressed images.
+- [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
+
+### release 2.80 💾
+- tested OpenCV vs PIL for saving images: same speed
+- various typos fixed
+- counter can now be disabled: 0 digits
 
 ### release 2.79 💾
 - enhancement 28-request-handle-lora-names-like-checkpoint-names
