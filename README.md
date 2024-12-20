@@ -44,8 +44,8 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 - Unknown key names in `filename_keys` and `foldername_keys` are treated as fixed strings
   - if you enter `wrongNumber.attribute`, you will get `attribute` in your filename.
 - Datetime UNIX format is now included! `%Y-%m-%d` or `%F` etc: see [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html)
-- default it output only the **name** for `ckpt_name` and `control_net_name` not the **path**
-  - use `ckpt_path` or `control_net_path` if you need the same subfolder structure as your models
+- default it output only the **name** for `ckpt_name` / `control_net_name` / `lora_name` not the **path**
+  - use `ckpt_path` / `control_net_path` / `lora_path` to get the same subfolders as your models
 - using `.custom_string` will prevent appending delimiter, the dot will be the delimiter
 
 ### Examples
@@ -176,7 +176,7 @@ To see node numbers in the UI, **enable the badge IDs**:
 </p>
 
 #
-jobs.json sample: always generated and appended, not sure what it can be used for.
+jobs.json sample:
 <br>
 <p align="center">
  <img src="assets/save-image-extended-comfyui-jobs-example.png" />
@@ -198,6 +198,9 @@ TODO:
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
+
+### release 2.79 💾
+- enhancement 28-request-handle-lora-names-like-checkpoint-names
 
 ### release 2.78 💾
 - fix 40-subdirectory-creation

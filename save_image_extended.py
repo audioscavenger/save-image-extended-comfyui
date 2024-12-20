@@ -11,7 +11,7 @@ import pprint
 import piexif
 import piexif.helper
 
-version = 2.78
+version = 2.79
 
 avif_supported = False
 jxl_supported = False
@@ -62,8 +62,8 @@ You must enable Badge numbers in the Manager if you have duplicate nodes: _#ID N
 - Workflows with multiple of the same node:
   - if you don't specify the node number in your keys like _13.sampler_name_, 
   - then the highest node number value will be returned
-- if your checkpoint/controlnet is in subfolders like SDXL/whatnot, `ckpt_name` will **not** have subfolders
-  - to get the subfolders from controlnets and checkpoints, add _ckpt_path_ or _control_net_path_ in *addition* to _ckpt_name_ or _control_net_name_
+- get name from CheckPoint/LorA/ControlNet: use _ckpt_name_ / _control_net_name_ / _lora_name_
+- get subfolders from CheckPoint/LorA/ControlNet: use use _ckpt_path_ / _control_net_path_ / _lora_path_
 
 ### subfolders
 - you can use `/` or `./` or even `../`
@@ -275,6 +275,12 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
             found_values['control_net_path'] = self.cleanup_fileName(str(value_path.parent))
           elif 'control_net_name' in keys_to_find:
             found_values['control_net_name'] = self.cleanup_fileName(str(value_path.name))
+        elif key in ['lora_path','lora_name']:
+          value_path = Path(value)
+          if 'lora_path' in keys_to_find:
+            found_values['lora_path'] = self.cleanup_fileName(str(value_path.parent))
+          elif 'lora_name' in keys_to_find:
+            found_values['lora_name'] = self.cleanup_fileName(str(value_path.name))
         else:
           found_values[key] = self.cleanup_fileName(value)
       elif isinstance(value, dict):
@@ -403,6 +409,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
                     self.find_keys_recursively(prompt[node], ['ckpt_name', nodeKey], found_values)
                   elif nodeKey == 'control_net_path':
                     self.find_keys_recursively(prompt[node], ['control_net_name', nodeKey], found_values)
+                  elif nodeKey == 'lora_path':
+                    self.find_keys_recursively(prompt[node], ['lora_name', nodeKey], found_values)
                   else:
                     self.find_keys_recursively(prompt[node], [nodeKey], found_values)
                 else:
@@ -412,6 +420,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
                     self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
                   elif nodeKey == 'control_net_path':
                     self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+                  elif nodeKey == 'lora_path':
+                    self.find_keys_recursively(prompt, ['lora_name', nodeKey], found_values)
                   else:
                     self.find_keys_recursively(prompt, [nodeKey], found_values)
               else:
@@ -428,6 +438,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
               self.find_keys_recursively(prompt, ['ckpt_name', nodeKey], found_values)
             elif nodeKey == 'control_net_path':
               self.find_keys_recursively(prompt, ['control_net_name', nodeKey], found_values)
+            elif nodeKey == 'lora_path':
+              self.find_keys_recursively(prompt, ['lora_name', nodeKey], found_values)
             elif nodeKey == 'resolution':
               value = resolution
             else:
@@ -461,7 +473,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
           
           # Now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
           # The recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
-          if nodeKey in ['ckpt_path', 'control_net_path']:
+          if nodeKey in ['ckpt_path', 'control_net_path', 'lora_path']:
             # smth_path is most likely placed before smth_name, therefore value cannot be resolved during the previous check
             value = found_values[nodeKey]
           else:
