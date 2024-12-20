@@ -201,6 +201,9 @@ TODO:
 - [x] PIL.Image doesn ot respect compress_level value and always output max 9 compressed images.
 - [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
 
+### release 2.81 💾
+- fix for pythongosssss/ComfyUI-Custom-Scripts Checkpoint Loader bug and other nodes that store values in a dict
+
 ### release 2.80 💾
 - tested OpenCV vs PIL for saving images: same speed
 - various typos fixed

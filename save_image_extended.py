@@ -13,7 +13,7 @@ import piexif.helper
 
 # import cv2  # not paster then PIL
 
-version = 2.80
+version = 2.81
 
 avif_supported = False
 jxl_supported = False
@@ -266,6 +266,14 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     for key, value in prompt.items():
       if key in keys_to_find:
         # print(f"debug find_keys_recursively: found key={key}")
+        # print(f"debug find_keys_recursively: value={value}")
+        # pythongosssss/ComfyUI-Custom-Scripts stores the value as a dict: value={'content': 'v1-5-pruned-emaonly.safetensors', 'image': 'checkpoints/v1-5-pruned-emaonly.jpg'}
+        if isinstance(value, dict):
+          if 'content' in value:
+            value = value['content']
+          else:
+            value = ''
+        
         if key in ['ckpt_path','ckpt_name']:
           value_path = Path(value)
           if 'ckpt_path' in keys_to_find:
