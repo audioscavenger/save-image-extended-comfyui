@@ -32,7 +32,7 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `job_data_per_image` | When enabled, saves individual job data files for each image. |
 | `job_custom_text` | Custom string to save along with the job data. Right click the node and convert to input to connect with another node. |
 | `save_metadata` | Saves metadata into the image. |
-| `counter_digits` | Number of digits used for the image counter. `3` = image_001.png. Will adjust the counter if files are deleted. Looks for the highest number in the folder, does not fill gaps. |
+| `counter_digits` | Number of digits used for the image counter. `3` = image_001.png. Will adjust the counter if files are deleted. Looks for the highest number in the folder, does not fill gaps. **Can be disabled** when == 0 |
 | `counter_position` | Image counter first or last in the filename. |
 | `one_counter_per_folder` | Toggles the counter. Either one counter per folder, or resets when a parameter/prompt changes. |
 | `image_preview` | Turns the image preview on and off. |
