@@ -881,7 +881,7 @@ NODE_CLASS_MAPPINGS = {
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-  'SaveImageExtended': '💾 Save Image Extended',
+  'SaveImageExtended': f'💾 Save Image Extended {version}',
 }
 
 
