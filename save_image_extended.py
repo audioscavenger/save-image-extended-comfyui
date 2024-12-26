@@ -18,6 +18,8 @@ version = 2.82
 avif_supported = False
 jxl_supported = False
 
+debug = False
+
 # Avif is included in requirements.txt
 try:
   import pillow_avif
@@ -262,11 +264,11 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   
   # find_keys_recursively is a self-updating recursive method, that will update the dict found_values
   def find_keys_recursively(self, prompt={}, keys_to_find=[], found_values={}):
-    # print(f"debug find_keys_recursively: keys_to_find={keys_to_find} found_values={found_values}")
+    if debug: print(f"debug find_keys_recursively: keys_to_find={keys_to_find} found_values={found_values}")
     for key, value in prompt.items():
       if key in keys_to_find:
-        # print(f"debug find_keys_recursively: found key={key}")
-        # print(f"debug find_keys_recursively: value={value}")
+        if debug: print(f"debug find_keys_recursively: found key={key}")
+        if debug: print(f"debug find_keys_recursively: value={value}")
         # pythongosssss/ComfyUI-Custom-Scripts stores the value as a dict: value={'content': 'v1-5-pruned-emaonly.safetensors', 'image': 'checkpoints/v1-5-pruned-emaonly.jpg'}
         if isinstance(value, dict):
           if 'content' in value:
@@ -280,7 +282,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
             found_values['ckpt_path'] = self.cleanup_fileName(str(value_path.parent))
           elif 'ckpt_name' in keys_to_find:
             found_values['ckpt_name'] = self.cleanup_fileName(str(value_path.name))
-          # print(f"debug find_keys_recursively: ckpt_name={value_path.name} ckpt_path={str(value_path.parent)}")
+          if debug: print(f"debug find_keys_recursively: ckpt_name={value_path.name} ckpt_path={str(value_path.parent)}")
         elif key in ['control_net_path','control_net_name']:
           value_path = Path(value)
           if 'control_net_path' in keys_to_find:
@@ -312,7 +314,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   def find_parameter_values(self, target_keys, prompt={}, found_values={}):
     loras_string = ''
     for key, value in prompt.items():
-      # print(f"debug find_parameter_values: key={key} value={value}")
+      if debug: print(f"debug find_parameter_values: key={key} value={value}")
       if 'loras' in target_keys:
         # Match both formats: lora_xx and lora_name_x
         if re.match(r'lora(_name)?(_\d+)?', key):
@@ -364,9 +366,9 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     
     if prompt is not None and keys_to_extract != ['']:
       found_values = {}
-      # print(f"debug generate_custom_name: --prefix: {prefix}")
-      # print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
-      # print(f"debug generate_custom_name: --prompt:")
+      if debug: print(f"debug generate_custom_name: --prefix: {prefix}")
+      if debug: print(f"debug generate_custom_name: --keys_to_extract: {keys_to_extract}")
+      if debug: print(f"debug generate_custom_name: --prompt:")
       
       # now separating numbered keys from non-numbered keys:
       #   37.ckpt_name = i want the ckpt_name from node #37
@@ -415,7 +417,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
                 # key has the form num.widget_name like 123.widget_name, we will then look for widget_name value in node #123
                 node, nodeKey = splitKey[0], splitKey[1]
                 if node in prompt:
-                  # print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
+                  if debug: print(f"debug generate_custom_name: --node.nodeKey = {node}.{nodeKey}")
                   # splitKey[0] = #node number found in prompt, we will recurse only in that node:
                   if nodeKey == 'ckpt_path':
                     self.find_keys_recursively(prompt[node], ['ckpt_name', nodeKey], found_values)
@@ -460,9 +462,9 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         # value was None
           
         # at this point we have a nodeKey, or a value, or both
-        # print(f"debug generate_custom_name: ----nodeKey:      {nodeKey}")
-        # print(f"debug generate_custom_name: ----value:        {value}")
-        # print(f"debug generate_custom_name: ----found_values: {found_values}")
+        if debug: print(f"debug generate_custom_name: ----nodeKey:      {nodeKey}")
+        if debug: print(f"debug generate_custom_name: ----value:        {value}")
+        if debug: print(f"debug generate_custom_name: ----found_values: {found_values}")
         if value is None:
           if nodeKey is not None:
             if nodeKey in found_values:
@@ -475,13 +477,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         
         # at this point, value is not None anymore
         # now we analyze each value found and format them accordingly:
-        # print(f"debug generate_custom_name: ----value: {value}")
+        if debug: print(f"debug generate_custom_name: ----value: {value}")
         
         # now we build the custom_name:
         if isinstance(value, str):
           # prefix and keys can very well be subfolders ending or starting with a /
           # for subfolders in keys, do not clean the filename...
-          # print(f"debug generate_custom_name: ---------: / in value? {nodeKey}={value}")
+          if debug: print(f"debug generate_custom_name: ---------: / in value? {nodeKey}={value}")
           
           # Now process the custom cases ckpt_path and control_net_path; maybe we should do that to `image` as well?
           # The recursive function creates ckpt_path and ckpt_name already; we just need to eliminate path if == '.'
@@ -495,18 +497,20 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
           value = float(f'{value:.10g}')
         
         custom_name.append(str(value))
-        # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+        if debug: print(f"debug generate_custom_name: ------custom_name: {custom_name}")
       # for each key
     
     # remove empty values
     custom_name = list(filter(None, custom_name))
+    # strip each item
+    custom_name = list(map(str.strip, custom_name))
     # join
     stringName = delimiter.join(custom_name).replace('/'+delimiter, '/').replace(delimiter+'/', '/').replace(delimiter+'.', '.')
-    # clean
-    stringName = stringName.strip(delimiter).strip('/').strip(delimiter).strip('.')
+    # clean and remove line feeds
+    stringName = re.sub('\s+',' ',stringName).strip(delimiter).strip('/').strip(delimiter).strip('.')
 
-    # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
-    # print(f"debug generate_custom_name: ------stringName:  {stringName}")
+    if debug: print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+    if debug: print(f"debug generate_custom_name: ------stringName:  {stringName}")
     return re.sub(r'[*?:"<>|]','',stringName).replace('/', os.sep)
   
   
@@ -713,7 +717,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   #  ███ ███  ██   ██ ██    ██    ███████ 
 
   def writeImage(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality):
-    # print(f"debug writeImage: image_path={image_path}")
+    if debug: print(f"debug writeImage: image_path={image_path}")
     if quality == 0:
       quality = self.quality
     # output_ext = os.path.splitext(os.path.basename(image_path))[1]
@@ -838,14 +842,14 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
 
       output_path = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).parent
       filename    = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).name
-      # print(f"debug save_images: custom_foldername=  {custom_foldername}")
-      # print(f"debug save_images: custom_filename=    {custom_filename}")
-      # print(f"debug save_images: output_path=        {output_path}")
-      # print(f"debug save_images: filename=           {filename}")
+      if debug: print(f"debug save_images: custom_foldername=  {custom_foldername}")
+      if debug: print(f"debug save_images: custom_filename=    {custom_filename}")
+      if debug: print(f"debug save_images: output_path=        {output_path}")
+      if debug: print(f"debug save_images: filename=           {filename}")
       
       os.makedirs(output_path, exist_ok=True)
       counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
-      # print(f"debug save_images: counter for {output_ext}: {counter}")
+      if debug: print(f"debug save_images: counter for {output_ext}: {counter}")
     
       results = list()
       for image in images:
