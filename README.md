@@ -23,22 +23,22 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 
 | Attribute | Description |
 | --- | --- |
-| `filename_prefix` |  String prefix added to files. |
+| `filename_prefix` |  Fixed string prefixed to file name. |
 | `filename_keys` | Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object, they should work. The same applies to `foldername_keys`. |
-| `foldername_prefix` | String prefix for subfolders. |
-| `foldername_keys` | Comma separated string with _sampler_ parameters to add to foldername. Add more subfolders by writing a "./" separated with commas. For example: `sampler_name, ./, ckpt_name` |
-| `delimiter` | **now a free field** Delimiter = 1 character, can be anything your file system supports. Windows users should still use "/" for subfolders. |
-| `save_job_data` | If enabled, saves information about each job as entries in a `jobs.json` text file, inside the generated folder. Mulitple options for saving `prompt`, `basic data`, `sampler settings`, `loaded models`. |
-| `job_data_per_image` | When enabled, saves individual job data files for each image. |
-| `job_custom_text` | Custom string to save along with the job data. Right click the node and convert to input to connect with another node. |
+| `foldername_prefix` | Fixed string prefixed to subfolders. |
+| `foldername_keys` | Same rules as for `filename_keys`. Create subfolders by using `/` or `../` etc. |
+| `delimiter` | **now a free field** Delimiter = any string you like. You can also use `/` to create subfolders. |
+| `save_job_data` | Saves information about each job as entries in a `jobs.json` text file, inside the generated subfolder. Multiple options for its content: `prompt`, `basic data`, `sampler settings`, `loaded models`. |
+| `job_data_per_image` | Saves individual job data file per image. |
+| `job_custom_text` | Custom string to save along with the job data. |
 | `save_metadata` | Saves metadata into the image. |
-| `counter_digits` | Number of digits used for the image counter. `3` = image_001.png. Will adjust the counter if files are deleted. Looks for the highest number in the folder, does not fill gaps. **Can be disabled** when == 0 |
-| `counter_position` | Image counter first or last in the filename. |
-| `one_counter_per_folder` | Toggles the counter. Either one counter per folder, or resets when a parameter/prompt changes. |
+| `counter_digits` | Number of digits used for the image counter. `3` = image_001.png, based on highest number in the subfolder, ignores gaps. **Can be disabled** when == 0. |
+| `counter_position` | Image counter postition: image_001.png or 001_image.png. |
+| `one_counter_per_folder` | Toggles one counter per subfolder, or resets when a parameter/prompt changes. |
 | `image_preview` | Turns the image preview on and off. |
-| `output_ext` |  File extension: PNG by default, or WEBP (coming soon). |
-| `quality` |  Quality for JPEG/JXL/WebP/AVIF/J2K formats; default 90 (AVIF only needs 60 for same results). |
-| `named_keys` |  Prefix each value by its key name: prefix-seed=123456-width=1024-etc-0001.avif |
+| `output_ext` | File extension: WEBP by default, AVIF, PNG, JXL, JPG, etc. |
+| `quality` |  Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. Example: AVIF 60 is same quality as WebP 90. |
+| `named_keys` |  Prefix each value by its key name. Example: prefix-seed=123456-width=1024-cfg=5.0-0001.avif |
 
 
 - Unknown key names in `filename_keys` and `foldername_keys` are treated as fixed strings
@@ -69,8 +69,8 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 - `images` - The generated images.
 
 Optional:
-- `positive_text_opt` - Optional string input for when using custom nodes for positive prompt text.
-- `negative_text_opt` - Optional string input for when using custom nodes for negative prompt text.
+- `positive_text_opt` - Optional string saved as `positive_text_opt` in job.json when `save_job_data`=True.
+- `negative_text_opt` - Optional string saved as `negative_text_opt` in job.json when `save_job_data`=True.
 
 ## Automatic date/time conversion in file/folder names
 
@@ -204,6 +204,7 @@ TODO:
 ### release 2.82 💾
 - bugfix: removed extra debug lines
 - improvement: now can extract CLIP text
+- improvement: added tooltips
 
 ### release 2.81 💾
 - fix for pythongosssss/ComfyUI-Custom-Scripts Checkpoint Loader bug and other nodes that store values in a dict

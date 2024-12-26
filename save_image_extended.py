@@ -156,44 +156,46 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     return {
       'required': {
         'images': ('IMAGE', ),
-        'filename_prefix': ('STRING', {'default': self.filename_prefix, 'multiline': False}),
-        'filename_keys': ('STRING', {'default': self.filename_keys, 'multiline': True}),
-        'foldername_prefix': ('STRING', {'default': self.foldername_prefix, 'multiline': False}),
-        'foldername_keys': ('STRING', {'default': self.foldername_keys, 'multiline': True}),
-        'delimiter': ('STRING', {'default': self.delimiter, 'multiline': False}),
+        'filename_prefix': ('STRING', {'default': self.filename_prefix, 'multiline': False, 'tooltip': "Fixed string prefixed to file name"}),
+        'filename_keys': ('STRING', {'default': self.filename_keys, 'multiline': True, 'tooltip': "Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object, they should work. The same applies to `foldername_keys`"}),
+        'foldername_prefix': ('STRING', {'default': self.foldername_prefix, 'multiline': False, 'tooltip': "Fixed string prefixed to subfolders"}),
+        'foldername_keys': ('STRING', {'default': self.foldername_keys, 'multiline': True, 'tooltip': "Same rules as for `filename_keys`. Create subfolders by using `/` or `../` etc"}),
+        'delimiter': ('STRING', {'default': self.delimiter, 'multiline': False, 'tooltip': "Any string you like. You can also use `/` to create subfolders"}),
         'save_job_data': ([
           'disabled', 
           'prompt', 
           'basic, prompt', 
           'basic, sampler, prompt', 
           'basic, models, sampler, prompt'
-        ], {'default': self.save_job_data}),
-        'job_data_per_image': ('BOOLEAN', {"default": self.job_data_per_image}),
-        'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False}),
-        'save_metadata': ('BOOLEAN', {'default': self.save_metadata}),
+        ], {'default': self.save_job_data, 'tooltip': "Saves information about each job as entries in a `jobs.json` text file, inside the generated subfolder. Multiple options for its content: `prompt`, `basic data`, `sampler settings`, `loaded models`"}),
+        'job_data_per_image': ('BOOLEAN', {"default": self.job_data_per_image, 'tooltip': "Saves individual job data file per image"}),
+        'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False, 'tooltip': "Custom string to save along with the job data"}),
+        'save_metadata': ('BOOLEAN', {'default': self.save_metadata, 'tooltip': "Saves metadata into the image"}),
         'counter_digits': ('INT', {
           "default": self.counter_digits, 
           "min": 0, 
           "max": 8, 
           "step": 1,
-          "display": "silder"
+          "display": "silder",
+          'tooltip': "umber of digits used for the image counter. `3` = image_001.png, based on highest number in the subfolder, ignores gaps. **Can be disabled** when == 0"
          }),
-        'counter_position': (self.counter_positions, {'default': self.counter_position}),
-        'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder}),
-        'image_preview': ('BOOLEAN', {'default': self.image_preview}),
-        'output_ext': (self.output_exts, {'default': self.output_ext}),
+        'counter_position': (self.counter_positions, {'default': self.counter_position, 'tooltip': "Image counter postition: image_001.png or 001_image.png"}),
+        'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder, 'tooltip': "Toggles one counter per subfolder, or resets when a parameter/prompt changes"}),
+        'image_preview': ('BOOLEAN', {'default': self.image_preview, 'tooltip': "Turns the image preview on and off"}),
+        'output_ext': (self.output_exts, {'default': self.output_ext, 'tooltip': "File extension: WEBP by default, AVIF, PNG, JXL, JPG, etc"}),
         'quality': ('INT', {
           "default": self.quality, 
           "min": 1, 
           "max": 100, 
           "step": 1,
-          "display": "silder"
-         }),
-        'named_keys': ('BOOLEAN', {'default': self.named_keys}),
+          "display": "silder",
+          'tooltip': "Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. Example: AVIF 60 is same quality as WebP 90"
+        }),
+        'named_keys': ('BOOLEAN', {'default': self.named_keys, 'tooltip': "Prefix each value by its key name. Example: prefix-seed=123456-width=1024-cfg=5.0-0001.avif"}),
       },
       'optional': {
-        'positive_text_opt': ('STRING', {'forceInput': True}),
-        'negative_text_opt': ('STRING', {'forceInput': True}),
+        'positive_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `positive_text_opt` in job.json when `save_job_data`=True"}),
+        'negative_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `negative_text_opt` in job.json when `save_job_data`=True"}),
                     },
       'hidden': {'prompt': 'PROMPT', 'extra_pnginfo': 'EXTRA_PNGINFO'},
     }
