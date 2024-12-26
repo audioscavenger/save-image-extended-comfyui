@@ -13,7 +13,7 @@ import piexif.helper
 
 # import cv2  # not paster then PIL
 
-version = 2.81
+version = 2.82
 
 avif_supported = False
 jxl_supported = False
@@ -505,8 +505,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     # clean
     stringName = stringName.strip(delimiter).strip('/').strip(delimiter).strip('.')
 
-    print(f"debug generate_custom_name: ------custom_name: {custom_name}")
-    print(f"debug generate_custom_name: ------stringName:  {stringName}")
+    # print(f"debug generate_custom_name: ------custom_name: {custom_name}")
+    # print(f"debug generate_custom_name: ------stringName:  {stringName}")
     return re.sub(r'[*?:"<>|]','',stringName).replace('/', os.sep)
   
   
