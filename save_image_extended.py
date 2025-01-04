@@ -8,8 +8,8 @@ from datetime import datetime
 from pathlib import Path
 import folder_paths
 import pprint
-import piexif
-import piexif.helper
+# import piexif
+# import piexif.helper
 
 # import cv2  # not faster then PIL
 
