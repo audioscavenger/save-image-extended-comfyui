@@ -37,7 +37,7 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 | `one_counter_per_folder` | Toggles one counter per subfolder, or resets when a parameter/prompt changes. |
 | `image_preview` | Turns the image preview on and off. |
 | `output_ext` | File extension: WEBP by default, AVIF, PNG, JXL, JPG, etc. |
-| `quality` |  Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. Example: AVIF 60 is same quality as WebP 90. |
+| `quality` |  Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. Example: AVIF 60 is same quality as WebP 90. PNG compression is fixed at 4 and not affected by this. PNG compression times skyrocket above level 4 for zero benefits on filesize. |
 | `named_keys` |  Prefix each value by its key name. Example: prefix-seed=123456-width=1024-cfg=5.0-0001.avif |
 
 
@@ -129,7 +129,7 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-Quality and compression settings: default is 90, 100 will activate **lossless** for AVIF and WEBP only.
+Quality and compression settings: min = 1, default is **90**, max = 100 will activate **lossless** for AVIF and WEBP only.
 
 Quick comparison of size per extension, for the same 512x512 picture, with similar visual quality:
 | Ext | Compression | Maker | Size | Compression |
@@ -144,6 +144,20 @@ Quick comparison of size per extension, for the same 512x512 picture, with simil
 | webp | 90       | PIL     |  64356 | 84% |
 | avif | 60       | PIL     |  47353 | 89% |
 | avif | 60       | Imagick |  33691 | 92% |
+
+#
+PNG compression 0-9 is fixed at level 4 for the following reason: ***zero** compression benefits above level 4*, while saving time skyrockets. Test results below for a 2560x1440 image on an Intel i7-9700:
+| Compression | time | Size |
+| --- | --- | --- |
+| 0   | 0.5s | 10.6 MB |
+| 1   | 0.6s | 4.6 MB |
+| 2   | 0.6s | 4.5 MB |
+| 3   | 0.6s | 4.4 MB |
+| **4**   | **0.7s** | **4.0 MB** |
+| 5   | 1.1s | 4.0 MB |
+| 6   | 1.9s | 4.0 MB |
+| 7   | 2.6s | 4.0 MB |
+| 9   | 10.5s | 3.9 MB |
 
 
 #
@@ -200,6 +214,9 @@ TODO:
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
 - [x] PIL.Image doesn ot respect compress_level value and always output max 9 compressed images.
 - [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
+
+### release 2.83 💾
+- quality is now also used for PNG compression: 0-90 translates to 0-9 levels of compression
 
 ### release 2.82 💾
 - bugfix: removed extra debug lines

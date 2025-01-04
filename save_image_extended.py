@@ -11,9 +11,9 @@ import pprint
 import piexif
 import piexif.helper
 
-# import cv2  # not paster then PIL
+# import cv2  # not faster then PIL
 
-version = 2.82
+version = 2.83
 
 avif_supported = False
 jxl_supported = False
@@ -90,8 +90,6 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
 
   type                    = 'output'
   
-  # BUG: PIL.Image doesn't respect compress_level value and always output max 9 compressed images when optimize_image = True
-  png_compress_level      = 9
   avif_quality            = 60
   webp_quality            = 90
   jpeg_quality            = 90
@@ -99,8 +97,8 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   j2k_quality             = 90
   # tiff_quality has no impact unless you start meddling with the compressions algorithms
   tiff_quality            = 90
-  # optimize_image only works for jpeg, png anf TIFF, with like just 2% reduction in size
-  optimize_image          = False
+  # optimize_image only works for jpeg, png anf TIFF, with like just 2% reduction in size; not used for PNG as it forces a level 9 compression.
+  optimize_image          = True
   
   filename_prefix         = 'ComfyUI'
   filename_keys           = 'sampler_name, cfg, steps, %F %H-%M-%S'
@@ -119,7 +117,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   modelExtensions         = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
   output_exts             = ['.webp', '.png', '.jpg', '.jpeg', '.j2k', '.jp2', '.gif', '.tiff', '.bmp']
-  # quality is a lossy compression unused by PNG/tiff/gif
+  # quality is a lossy compression unused by PNG/tiff/gif but also translated to integers 0-9 for PNG compression level
   quality                 = 90
   named_keys              = False
 
@@ -157,7 +155,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       'required': {
         'images': ('IMAGE', ),
         'filename_prefix': ('STRING', {'default': self.filename_prefix, 'multiline': False, 'tooltip': "Fixed string prefixed to file name"}),
-        'filename_keys': ('STRING', {'default': self.filename_keys, 'multiline': True, 'tooltip': "Comma separated string with sampler parameters to add to filename. E.g: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. `resolution`  also works. `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint) are others that should work. Here you can try any parameter name of any node. As long as the parameter has the same variable name defined in the `prompt` object, they should work. The same applies to `foldername_keys`"}),
+        'filename_keys': ('STRING', {'default': self.filename_keys, 'multiline': True, 'tooltip': "Comma separated string with sampler parameters to add to filename. \n* Example: `sampler_name, scheduler, cfg, denoise` Added to filename in written order. \n* Example: also accepts `vae_name` `model_name` (upscale model), `ckpt_name` (checkpoint). \n* `resolution`  also works. \n\n* ANY parameter name of any node will work. The same applies to `foldername_keys`"}),
         'foldername_prefix': ('STRING', {'default': self.foldername_prefix, 'multiline': False, 'tooltip': "Fixed string prefixed to subfolders"}),
         'foldername_keys': ('STRING', {'default': self.foldername_keys, 'multiline': True, 'tooltip': "Same rules as for `filename_keys`. Create subfolders by using `/` or `../` etc"}),
         'delimiter': ('STRING', {'default': self.delimiter, 'multiline': False, 'tooltip': "Any string you like. You can also use `/` to create subfolders"}),
@@ -167,7 +165,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
           'basic, prompt', 
           'basic, sampler, prompt', 
           'basic, models, sampler, prompt'
-        ], {'default': self.save_job_data, 'tooltip': "Saves information about each job as entries in a `jobs.json` text file, inside the generated subfolder. Multiple options for its content: `prompt`, `basic data`, `sampler settings`, `loaded models`"}),
+        ], {'default': self.save_job_data, 'tooltip': "Saves information about each job as entries in a `jobs.json` text file, under the generated subfolder. \nMultiple options for its content: `prompt`, `basic data`, `sampler settings`, `loaded models`"}),
         'job_data_per_image': ('BOOLEAN', {"default": self.job_data_per_image, 'tooltip': "Saves individual job data file per image"}),
         'job_custom_text': ('STRING', {'default': self.job_custom_text, 'multiline': False, 'tooltip': "Custom string to save along with the job data"}),
         'save_metadata': ('BOOLEAN', {'default': self.save_metadata, 'tooltip': "Saves metadata into the image"}),
@@ -185,11 +183,11 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         'output_ext': (self.output_exts, {'default': self.output_ext, 'tooltip': "File extension: WEBP by default, AVIF, PNG, JXL, JPG, etc"}),
         'quality': ('INT', {
           "default": self.quality, 
-          "min": 1, 
+          "min": 0, 
           "max": 100, 
           "step": 1,
           "display": "silder",
-          'tooltip': "Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. Example: AVIF 60 is same quality as WebP 90"
+          'tooltip': "Quality for JPEG/JXL/WebP/AVIF/J2K formats; Quality is relative to each format. \n* Example: AVIF 60 is same quality as WebP 90. \n* PNG compression is fixed at 4 and not affected by this. PNG compression times skyrocket above level 4 for zero benefits on filesize."
         }),
         'named_keys': ('BOOLEAN', {'default': self.named_keys, 'tooltip': "Prefix each value by its key name. Example: prefix-seed=123456-width=1024-cfg=5.0-0001.avif"}),
       },
@@ -755,19 +753,29 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       # tiff: no quality
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
-      # png/gif: no quality
       if save_metadata: kwargs["pnginfo"] = self.genMetadataPng(img, prompt, extra_pnginfo)
-      kwargs["compress_level"] = self.png_compress_level
-      kwargs["optimize"] = self.optimize_image
+
+      # png/gif: no quality, rather we convert quality to compression level in the 0-9 range
+      old_min = 0
+      old_max = 90
+      new_min = 0
+      new_max = 9
+      if quality >= 91: quality = 90
+      png_compress_level = round( ( (quality - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min )
+      
+      kwargs["compress_level"] = png_compress_level
+      # BUG: PIL will compress at level 9 when PNG optimize_image = True
+      # kwargs["optimize"] = self.optimize_image
     # elif output_ext in ['.bmp']:
       # nothing to add
       
-    # img.save(image_path, pnginfo=metadata, compress_level=self.png_compress_level)
+    # BUG: PIL.Image doesn't respect compress_level value and always output max 9 compressed images when optimize_image = True
+    # img.save(image_path, pnginfo=metadata, compress_level=png_compress_level)
     img.save(image_path, **kwargs)
 
     # Is saving image with OpenCV really faster then PIL? https://github.com/python-pillow/Pillow/issues/5986
     # I found that it does not matter for anything smaller then 8k*8k, which Comfy cannot produce anyways.
-    # compression_level = [cv2.IMWRITE_PNG_COMPRESSION, self.png_compress_level]
+    # compression_level = [cv2.IMWRITE_PNG_COMPRESSION, png_compress_level]
     # image_array = numpy.array(img)
     # image_array = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
     # cv2.imwrite(image_path.replace('000','cv2'), image_array)
