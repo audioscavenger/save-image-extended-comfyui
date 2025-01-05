@@ -48,6 +48,15 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
   - use `ckpt_path` / `control_net_path` / `lora_path` to get the same subfolders as your models
 - using `.custom_string` will prevent appending delimiter, the dot will be the delimiter
 
+### FAQ
+* How do I format the date/timestamps?
+  * see [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html)
+* How do I reference the prompt (aka CLIP Text Encode) in the filename (given it's not too long)?
+  * Like this: use `#num.text` ![CLIP_save_prompt](assets/save-image-extended-comfyui-CLIP_save_prompt.png)
+* How do I show the nodes ID badges?
+  * legacy: ![ComfyUI-enable-badge-ids-legacy](assets/ComfyUI-enable-badge-ids-legacy.png)
+  * modern: ![ComfyUI-enable-badge-ids-legacy](assets/ComfyUI-enable-badge-ids-modern.png)
+
 ### Examples
 - prefix = `PREFIX`
 - filename = `cfg, sampler_name, /steps, %F %H-%M-%S`
@@ -72,9 +81,9 @@ Optional:
 - `positive_text_opt` - Optional string saved as `positive_text_opt` in job.json when `save_job_data`=True.
 - `negative_text_opt` - Optional string saved as `negative_text_opt` in job.json when `save_job_data`=True.
 
-## Automatic date/time conversion in file/folder names
+## How To Date/Time conversion in file/folder names:
 
-Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html):
+Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.1.html) following POSIX format. Examples:
 
 | Unix datetime | Example | Comment |
 | --- | --- | --- |
@@ -91,21 +100,14 @@ Converts [unix datetime formats](https://www.man7.org/linux/man-pages/man1/date.
 ### Requirements:
 There is a requirements.txt that will take care of that, but just in case:
 
-- python 10.6
-- piexif
-- imagecodecs
+- python 10.6+
+- numpy
 - pillow
 - pillow-avif-plugin
 - pillow-jxl-plugin
 
 ```
-pip install piexif pillow pillow-avif-plugin
-```
-
-For Jpeg XL / jxl it's more complicated. You cannot compile the wheel jxlpy on Windows. Therefore, we use an alternative: [imagecodecs](https://pypi.org/project/imagecodecs/)
-
-```
-pip install -U imagecodecs
+pip install numpy pillow pillow-avif-plugin pillow-jxl-plugin
 ```
 
 ### Manual Download
@@ -115,14 +117,17 @@ pip install -U imagecodecs
 git clone https://github.com/audioscavenger/save-image-extended-comfyui
 ```
 
+
+## Known Bugs
+* ComfyUI cannot load lossless WebP atm. Feel free to try and fix `pnginfo.js`.
+* Pillow cannot save Exif data in JPEG2000, nor can it compress it in any way. Who the heck is using JPEG2000 in 2024 anyway?
+* Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node adds all major and latest image formats.
+* WebP cannot handle images larger than 12,000 x 12,0000 pixels and that's by design. Ask a Google developer to fix the cwebp library.
+* JXL (pillow-jxl-plugin) cannot even save images 12,000 x 12,0000 pixels and will crash Comfy completely.
+* [Load Image //Inspire](https://github.com/ltdrdata/ComfyUI-Inspire-Pack) will keep loaded images as base64 inside the prompt... exploding your output filesize. JPEG has a metadata size limit and will likely fail with error `EXIF data is too long`.
+
+
 ## Miscelaneous
-#
-[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if true indeed that Google is working on WebP2, jxl is unlikely to take off any day soon. Proponents arguably declare with no proof, that jxl is better and faster than the current best codec: AVIF. But again, without support from the industry, it's going nowhere.
-
-I tested with compression 90 and it's good, with a caveat. The compression offered by pillow is 3x lower then Image Magick for the same level. No idea why.
-
-#
-Pillow cannot save Exif data in JPEG2000, nor can it compress it in any way. Who the heck is using JPEG2000 in 2024 anyway?
 
 #
 Disclaimer: Does not check for illegal characters entered in file or folder names. May not be compatible with every other custom node, depending on changes in the `prompt` object. 
@@ -176,18 +181,10 @@ You can retrieve the prompt manually with [exiftool](https://exiftool.org/), her
 - `exiftool -Parameters -UserComment -ImageDescription image.{jpg|jpeg|webp|avif|jxl}`
 
 #
-ComfyUI cannot load lossless WebP atm. Feel free to try and fix `pnginfo.js`
+[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if true, that Google is working on WebP2, JXL is unlikely to take off any day soon. Proponents arguably declare with no proof, that jxl is better and faster than the current best codec: AVIF. But again, without support from the industry, it's going nowhere.
 
-#
-Incompatible with *extended-saveimage-comfyui* - This node can be safely discarded, as it only offers WebP output. My node already adds JPEG and WebP.
+I tested with compression 90 and it's good compared to WebP, with a caveat. The compression offered by pillow is 3x lower then Image Magick for the same level. No idea why.
 
-#
-You asked for it... Now you can select which node to get the widget values from! Formerly, this custom node would simply return the last value found: useless if you have multiple same nodes...
-To see node numbers in the UI, **enable the badge IDs**:
-<br>
-<p align="center">
- <img src="assets/ComfyUI-enable-badge-ids.png" />
-</p>
 
 #
 jobs.json sample:
@@ -207,16 +204,20 @@ Once I feel like I don't have time to work on it, I will gladly transfer ownersh
 
 TODO:
 
+- [ ] WebP: explore method values 0-6 and test filesize vs save time
+- [ ] WebP: quality has an impact on both lossy and lossless, more testing needed
+- [ ] review accepted parameters at https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html to improve TIFF and other formats
 - [ ] accept multiple images as input
 - [ ] improve get_latest_counter: restarts when user renames files after the counter part.
 - [ ] offer to place the counter anywhere, as a key in filename_keys
 - [ ] keep same counter if extension changes?
 - [ ] files will be out of order if prefixes change... that is expected, but is this what we want?
-- [x] PIL.Image doesn ot respect compress_level value and always output max 9 compressed images.
+- [x] PIL.Image doesn't respect compress_level value and always output max 9 compressed images -> when optimize_image = True! So we turn that off for PNG
 - [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
 
 ### release 2.83 💾
 - quality is now also used for PNG compression: 0-90 translates to 0-9 levels of compression
+- requirements.txt and import cleanups, updated wiki
 
 ### release 2.82 💾
 - bugfix: removed extra debug lines
