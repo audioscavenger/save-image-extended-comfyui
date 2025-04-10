@@ -675,7 +675,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     # https://exiftool.org/TagNames/EXIF.html
     # exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
     exif[0x010f] = "Prompt: " + json.dumps(metadata['prompt'])     # Make
-    exif[0x010e] = "Workflow: " + json.dumps(metadata['workflow']) # ImageDescription
+    exif[0x010e] = "Workflow: " + json.dumps(metadata.get('workflow', {})) # ImageDescription
     
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")      # type 1
