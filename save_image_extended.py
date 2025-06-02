@@ -14,12 +14,13 @@ import numpy
 
 # import cv2  # not faster then PIL
 
-version = 2.83
+version = 2.84
 
 avif_supported = False
 jxl_supported = False
 
 debug = False
+# debug = True
 
 # Avif is included in requirements.txt
 try:
@@ -113,7 +114,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   counter_digits          = 4
   counter_position        = 'last'
   counter_positions       = ['last', 'first']
-  one_counter_per_folder  = True
+  one_counter_per_folder  = True                # deprecated but cannot remove it or all values loaded after it will be shifted
   image_preview           = True
   modelExtensions         = ['.safetensors', '.ckpt', '.pt', '.bin', '.pth']
   output_ext              = '.webp'
@@ -179,7 +180,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
           'tooltip': "umber of digits used for the image counter. `3` = image_001.png, based on highest number in the subfolder, ignores gaps. **Can be disabled** when == 0"
          }),
         'counter_position': (self.counter_positions, {'default': self.counter_position, 'tooltip': "Image counter postition: image_001.png or 001_image.png"}),
-        'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder, 'tooltip': "Toggles one counter per subfolder, or resets when a parameter/prompt changes"}),
+        'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder, 'tooltip': "deprecated but I cannot remove it of all your saved prompts will break"}),
         'image_preview': ('BOOLEAN', {'default': self.image_preview, 'tooltip': "Turns the image preview on and off"}),
         'output_ext': (self.output_exts, {'default': self.output_ext, 'tooltip': "File extension: WEBP by default, AVIF, PNG, JXL, JPG, etc"}),
         'quality': ('INT', {
@@ -237,22 +238,37 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   #  ██████  ██████   ██████  ██   ████    ██    ███████ ██   ██ 
 
   # Get current counter number from file names
-  def get_latest_counter(self, one_counter_per_folder, folder_path, filename_prefix, counter_digits=counter_digits, counter_position=counter_position, output_ext=output_ext):
+  def get_latest_counter(self, folder_path, filename, counter_digits=counter_digits, counter_position=counter_position, output_ext=output_ext):
     counter = 1
     if not os.path.exists(folder_path):
       print(f"SaveImageExtended {version} error: Folder {folder_path} does not exist, starting counter at 1.")
       return counter
     
     try:
+      # grab all files with output_ext
       files = [file for file in os.listdir(folder_path) if file.endswith(output_ext)]
+      # ['0001.webp', '0003-a.webp', 'AnythingV5_inkBase-0001.webp', 'AnythingV5_inkBase-0002.webp']
+
       extLen = len(output_ext)
+      # '.webp' = 5
+
       if files:
+        # get default counter position if passed value is somehow not in the allowed values list
         if counter_position not in self.counter_positions: counter_position = self.counter_position
-        if counter_position == 'last':
-          # BUG: this works only if extension is 3 letters like png, this will break with webp and avif:
-          counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdecimal() else 0 for file in files if one_counter_per_folder or file.startswith(filename_prefix)]
+        
+        # issue/48 needs a special case for files, counter_position does not matter here, but the filename length does
+        if not filename:
+          counters = [int(file[:counter_digits]) if (file[:counter_digits].isdecimal() and len(file)==(counter_digits+extLen)) else 0 for file in files]
+          [1, 0, 0, 0]
         else:
-          counters = [int(file[:counter_digits]) if file[:counter_digits].isdecimal() else 0 for file in files if one_counter_per_folder or file[counter_digits +1:].startswith(filename_prefix)]
+          if counter_position == 'last':
+            counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdecimal() else 0 for file in files if file.startswith(filename)]
+            # [1, 0, 1, 2]
+          else:
+            # file[:counter_digits] = '0001'
+            # file[counter_digits +1:] = 'webp'
+            counters = [int(file[:counter_digits]) if file[:counter_digits].isdecimal() else 0 for file in files if file[counter_digits +1:].startswith(filename)]
+            # [1, 3, 0, 0]
         
         if counters:
           counter = max(counters) + 1
@@ -260,6 +276,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     except Exception as e:
       print(f"SaveImageExtended {version} error: An error occurred while finding the latest counter: {e}")
     
+    if debug: print(f"debug get_latest_counter: counter={counter}")
     return counter
   
   
@@ -735,6 +752,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         kwargs["lossless"] = True
       else:
         kwargs["quality"] = quality
+      kwargs["optimize"] = self.optimize_image
     if output_ext in ['.j2k', '.jp2', '.jpc', '.jpf', '.jpx', '.j2c']:
       if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       if quality < 100:
@@ -755,7 +773,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
       if save_metadata: kwargs["pnginfo"] = self.genMetadataPng(img, prompt, extra_pnginfo)
-
+    
       # png/gif: no quality, rather we convert quality to compression level in the 0-9 range
       old_min = 0
       old_max = 90
@@ -813,21 +831,23 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       named_keys=named_keys,
     ):
     
-    # print(f"save_images filename_prefix = x{filename_prefix}x")
-    # print(f"save_images filename_keys = x{filename_keys}x")
-    # print(f"save_images foldername_prefix = x{foldername_prefix}x")
-    # print(f"save_images foldername_keys = x{foldername_keys}x")
-    # print(f"save_images delimiter = x{delimiter}x")
-    # print(f"save_images save_job_data = x{save_job_data}x")
-    # print(f"save_images job_data_per_image = x{job_data_per_image}x")
-    # print(f"save_images output_ext = x{output_ext}x")
-    # print(f"save_images quality = x{quality}x")
+    if debug: 
+      print(f"debug save_images filename_prefix =     x{filename_prefix}x")
+      print(f"debug save_images filename_keys =       x{filename_keys}x")
+      print(f"debug save_images foldername_prefix =   x{foldername_prefix}x")
+      print(f"debug save_images foldername_keys =     x{foldername_keys}x")
+      print(f"debug save_images delimiter =           x{delimiter}x")
+      print(f"debug save_images save_job_data =       x{save_job_data}x")
+      print(f"debug save_images job_data_per_image =  x{job_data_per_image}x")
+      print(f"debug save_images output_ext =          x{output_ext}x")
+      print(f"debug save_images quality =             x{quality}x")
 
     # bugfix: sometimes on load, quality == 0
     if quality == 0: quality = self.quality
     
     # apply default values: we replicate the default save image box
-    if not filename_prefix and not filename_keys: filename_prefix=self.filename_prefix
+    # Nope: as per issues/48 request, we could want 0001.jpg etc with no name
+    # if not filename_prefix and not filename_keys: filename_prefix=self.filename_prefix
     if delimiter: delimiter = delimiter[0]
     
     filename_keys_to_extract = [item.strip() for item in filename_keys.split(',')]
@@ -851,16 +871,20 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       # full_output_folder, filename, _, _, custom_filename = folder_paths.get_save_image_path(custom_filename, self.output_dir, images[0].shape[1], images[0].shape[0])
       # output_path = os.path.join(full_output_folder, custom_foldername)
 
-      output_path = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).parent
-      filename    = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).name
+      # issue/48
+      if custom_filename:
+        output_path = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).parent
+        filename    = Path(os.path.join(self.output_dir, custom_foldername, custom_filename)).name
+      else:
+        output_path = Path(os.path.join(self.output_dir, custom_foldername))
+        filename = ''
       if debug: print(f"debug save_images: custom_foldername=  {custom_foldername}")
       if debug: print(f"debug save_images: custom_filename=    {custom_filename}")
       if debug: print(f"debug save_images: output_path=        {output_path}")
       if debug: print(f"debug save_images: filename=           {filename}")
       
       os.makedirs(output_path, exist_ok=True)
-      counter = self.get_latest_counter(one_counter_per_folder, output_path, filename, counter_digits, counter_position, output_ext)
-      if debug: print(f"debug save_images: counter for {output_ext}: {counter}")
+      counter = self.get_latest_counter(output_path, filename, counter_digits, counter_position, output_ext)
     
       results = list()
       for image in images:
@@ -868,12 +892,20 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         img = Image.fromarray(numpy.clip(i, 0, 255).astype(numpy.uint8))
         
         if counter_digits > 0:
-          if counter_position == 'last':
-            image_name = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
+          # issue/48
+          if filename:
+            if counter_position == 'last':
+              image_name = f'{filename}{delimiter}{counter:0{counter_digits}}{output_ext}'
+            else:
+              image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
           else:
-            image_name = f'{counter:0{counter_digits}}{delimiter}{filename}{output_ext}'
+            image_name = f'{counter:0{counter_digits}}{output_ext}'
         else:
-          image_name = f'{filename}{output_ext}'
+          # issue/48
+          if filename:
+            image_name = f'{filename}{output_ext}'
+          else:
+            image_name = f'{filename_prefix}{output_ext}'
         
         image_path = os.path.join(output_path, image_name)
         self.writeImage(image_path, img, prompt, save_metadata, extra_pnginfo, quality)

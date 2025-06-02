@@ -215,6 +215,10 @@ TODO:
 - [x] PIL.Image doesn't respect compress_level value and always output max 9 compressed images -> when optimize_image = True! So we turn that off for PNG
 - [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
 
+### release 2.84 💾
+- issue/48: allow no prefix and no filename_keys at all to generate 0001.jpg files
+- one_counter_per_folder is depracated as it was in fact, not implemented at all. Cannot remove it or all previous saves will crash the widget
+
 ### release 2.83 💾
 - quality is now also used for PNG compression: 0-90 translates to 0-9 levels of compression
 - requirements.txt and import cleanups, updated wiki
