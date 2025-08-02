@@ -14,7 +14,7 @@ import numpy
 
 # import cv2  # not faster then PIL
 
-version = 2.85
+version = 2.86
 
 avif_supported = False
 jxl_supported = False
@@ -177,7 +177,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
           "max": 8, 
           "step": 1,
           "display": "silder",
-          'tooltip': "umber of digits used for the image counter. `3` = image_001.png, based on highest number in the subfolder, ignores gaps. **Can be disabled** when == 0"
+          'tooltip': "Number of digits used for the image counter. `3` = image_001.png, based on highest number in the subfolder, ignores gaps. **Can be disabled** when == 0"
          }),
         'counter_position': (self.counter_positions, {'default': self.counter_position, 'tooltip': "Image counter postition: image_001.png or 001_image.png"}),
         'one_counter_per_folder': ('BOOLEAN', {'default': self.one_counter_per_folder, 'tooltip': "deprecated but I cannot remove it of all your saved prompts will break"}),
@@ -259,7 +259,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
         # issue/48 needs a special case for files, counter_position does not matter here, but the filename length does
         if not filename:
           counters = [int(file[:counter_digits]) if (file[:counter_digits].isdecimal() and len(file)==(counter_digits+extLen)) else 0 for file in files]
-          [1, 0, 0, 0]
+          # [1, 0, 0, 0]
         else:
           if counter_position == 'last':
             counters = [int(file[-(extLen + counter_digits):-extLen]) if file[-(extLen + counter_digits):-extLen].isdecimal() else 0 for file in files if file.startswith(filename)]

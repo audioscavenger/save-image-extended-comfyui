@@ -215,6 +215,9 @@ TODO:
 - [x] PIL.Image doesn't respect compress_level value and always output max 9 compressed images -> when optimize_image = True! So we turn that off for PNG
 - [x] TODO: test import cv2 / OpenCV: https://github.com/python-pillow/Pillow/issues/5986 -> not faster then PIL
 
+### release 2.86 💾
+- bugfix in counter_digits which does not accept 0 to disable counter
+
 ### release 2.85 💾
 - issue/51: #31 #49 API mode KeyError - fix by adding empty {} to the metadata for the API call
 
