@@ -9,6 +9,21 @@ import folder_paths
 
 import pprint
 import numpy
+
+# imagecodecs-based JXL/AVIF with Brotli-compressed metadata brob box
+try:
+    from .jxl_io import (
+        encode_jxl_with_metadata,
+        encode_avif_with_metadata,
+        decode_jxl_to_numpy,
+        decode_avif_to_numpy,
+        extract_isobmff_metadata,
+        JXL_AVAILABLE as JXL_IC,
+        AVIF_AVAILABLE as AVIF_IC,
+    )
+except ImportError:
+    JXL_IC = False
+    AVIF_IC = False
 # import piexif
 # import piexif.helper
 
@@ -217,10 +232,13 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       # return "cannot be empty or 0"
     # return True
 
-  # TODO: see how that works and how that can help
-  # @classmethod
-  # def IS_CHANGED(self, **kwargs):
-      # return float("nan")
+  @classmethod
+  def IS_CHANGED(cls, **kwargs):
+      return float("nan")
+
+  @classmethod
+  def VALIDATE_INPUTS(cls, **kwargs):
+      return True
 
   def get_subfolder_path(self, image_path, output_path):
     image_path = Path(image_path).resolve()
@@ -748,13 +766,49 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     # TODO: see if convert_hdr_to_8bit=False make a change
     # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
     
-    if output_ext in ['.avif', '.webp', '.jxl']:
-      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+    if output_ext == '.jxl':
+      if JXL_IC:
+        numpy_array = numpy.array(img)
+        jxl_bytes = encode_jxl_with_metadata(
+            numpy_array,
+            quality=quality,
+            prompt=prompt if save_metadata else None,
+            extra_pnginfo=extra_pnginfo if save_metadata else None,
+        )
+        with open(image_path, 'wb') as f:
+            f.write(jxl_bytes)
+        return
+      if save_metadata: kwargs['exif'] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       if quality == 100:
-        kwargs["lossless"] = True
+        kwargs['lossless'] = True
       else:
-        kwargs["quality"] = quality
-      kwargs["optimize"] = self.optimize_image
+        kwargs['quality'] = quality
+      kwargs['optimize'] = self.optimize_image
+    elif output_ext == '.avif':
+      if AVIF_IC:
+        numpy_array = numpy.array(img)
+        avif_bytes = encode_avif_with_metadata(
+            numpy_array,
+            quality=quality,
+            prompt=prompt if save_metadata else None,
+            extra_pnginfo=extra_pnginfo if save_metadata else None,
+        )
+        with open(image_path, 'wb') as f:
+            f.write(avif_bytes)
+        return
+      if save_metadata: kwargs['exif'] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+      if quality == 100:
+        kwargs['lossless'] = True
+      else:
+        kwargs['quality'] = quality
+      kwargs['optimize'] = self.optimize_image
+    elif output_ext == '.webp':
+      if save_metadata: kwargs['exif'] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+      if quality == 100:
+        kwargs['lossless'] = True
+      else:
+        kwargs['quality'] = quality
+      kwargs['optimize'] = self.optimize_image
     if output_ext in ['.j2k', '.jp2', '.jpc', '.jpf', '.jpx', '.j2c']:
       if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
       if quality < 100:

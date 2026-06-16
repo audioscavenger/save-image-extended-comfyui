@@ -14,6 +14,7 @@ dependencies = [
   "pillow", 
   "pillow-avif-plugin", 
   "pillow-jxl-plugin", 
+  "brotli", 
   "comfyui-frontend-package>=1.20.0"
 ]
 classifiers = [

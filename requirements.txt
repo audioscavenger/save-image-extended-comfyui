@@ -1,10 +1,9 @@
-# piexif    # for testing
-# jpegxl support: imagecodecs will bring libjxl 0.9.0
-# imagecodecs   # pillow-jxl-plugin is simpler
-
+# imagecodecs provides JXL/AVIF encode/decode with full ISOBMFF control
+# brotli provides metadata compression for JXL/AVIF custom boxes
 numpy
 piexif
 imagecodecs
 pillow
 pillow-avif-plugin
 pillow-jxl-plugin
+brotli>=1.2.0

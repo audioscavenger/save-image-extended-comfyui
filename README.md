@@ -10,7 +10,7 @@ Supports those extensions: **JXL AVIF WebP jpg jpeg j2k jp2 png gif tiff bmp**
 * Customize the folder, sub-folders, and filenames of your images! 
 * Save data about the generated job (sampler, prompts, models) as entries in a `json` (text) file, in each folder.
 * Use the values of ANY node's widget, by simply adding its badge number in the form _id.widget_name_
-* Warning: ComfyUI can only load prompts from PNG and WebP atm
+* Supports workflow recovery from JXL, AVIF, WebP images with embedded metadata
 
 
 <br>
@@ -105,11 +105,13 @@ There is a requirements.txt that will take care of that, but just in case:
 - python 10.6+
 - numpy
 - pillow
+- imagecodecs (JXL/AVIF encode/decode)
+- brotli (metadata compression)
 - pillow-avif-plugin
 - pillow-jxl-plugin
 
 ```
-pip install numpy pillow pillow-avif-plugin pillow-jxl-plugin
+pip install numpy pillow imagecodecs brotli pillow-avif-plugin pillow-jxl-plugin
 ```
 
 ### Tested on / up to:
@@ -142,7 +144,7 @@ Disclaimer: Does not check for illegal characters entered in file or folder name
 Tested and working with default samplers, Efficiency nodes, UltimateSDUpscale, ComfyRoll, composer, NegiTools, and 45 other nodes.
 
 #
-Quality and compression settings: min = 1, default is **90**, max = 100 will activate **lossless** for AVIF and WEBP only.
+Quality and compression settings: min = 1, default is **90**, max = 100 will activate **lossless** for JXL, AVIF and WEBP.
 
 Quick comparison of size per extension, for the same 512x512 picture, with similar visual quality:
 | Ext | Compression | Maker | Size | Compression |
@@ -174,24 +176,33 @@ PNG compression 0-9 is fixed at level 4 for the following reason: ***zero** comp
 
 
 #
-About extensions WebP AVIF JPEG JXL: ComfyUI can only load PNG and WebP atm... Feel free to ask ComfyUI team to add support for AVIF/jpeg/JXL!
+JXL and AVIF images support workflow recovery via embedded compressed metadata (Brotli). ComfyUI can load them through drag & drop.
 
-The metadata Are included under the **EXIF** tags IFD below, as defined [here](https://exiftool.org/TagNames/EXIF.html)
-WAS Node Suite also use those tags. They must be next to each other in order to Comfy to be able to load them with drag and drop.
+Metadata is stored as Brotli-compressed JSON inside a custom ISOBMFF `brob` box (for JXL/AVIF) or in EXIF tags (for WebP/JPEG/PNG).
 
-| Data | EXIF | Name | String looks like |
-| --- | --- | --- | --- |
-| prompt | 0x010f | Make | Prompt: {"5" ... } |
-| workflow | 0x010e | ImageDescription | Workflow: {"5" ... } |
+| Format | Storage | Compression |
+| --- | --- | --- |
+| JXL / AVIF | custom `brob` ISOBMFF box | Brotli |
+| WebP / JPEG / PNG | EXIF tags 0x010f (Make), 0x010e (ImageDescription) | none |
 
 You can retrieve the prompt manually with [exiftool](https://exiftool.org/), here are some example commands:
 - `exiftool -Parameters -Prompt -Workflow image.png`
-- `exiftool -Parameters -UserComment -ImageDescription image.{jpg|jpeg|webp|avif|jxl}`
+- `exiftool -Parameters -UserComment -ImageDescription image.{jpg|jpeg|webp}`
+- For JXL/AVIF with brob box: use a hex editor or the `/api/jxl_metadata` server route
 
 #
-[JPEG XL is a heated debate on chromium forum](https://issues.chromium.org/issues/40168998#comment85) and if true, that Google is working on WebP2, JXL is unlikely to take off any day soon. Proponents arguably declare with no proof, that jxl is better and faster than the current best codec: AVIF. But again, without support from the industry, it's going nowhere.
+### Browser support for JXL
 
-I tested with compression 90 and it's good compared to WebP, with a caveat. The compression offered by pillow is 3x lower then Image Magick for the same level. No idea why.
+JXL images can be viewed directly in the browser (drag & drop from ComfyUI).
+
+**Chrome/Edge/Brave:**
+1. Open `chrome://flags/#enable-jxl-image-format` in the address bar
+2. Find `Enable JXL image format` and switch from `Default` to `Enabled`
+3. Restart the browser
+
+**Firefox:**
+- Stable release (152+, June 16 2026): open `about:config`, set `image.jxl.enabled` to `true`
+- Nightly: JXL is available out of the box
 
 
 #
