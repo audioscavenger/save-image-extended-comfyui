@@ -116,8 +116,8 @@ class SaveImageExtended:
         'named_keys': ('BOOLEAN', {'default': self.named_keys, 'tooltip': "Prefix each value by its key name. Example: prefix-seed=123456-width=1024-cfg=5.0-0001.avif"}),
       },
       'optional': {
-        'positive_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `positive_text_opt` in job.json when `save_job_data`=True"}),
-        'negative_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `negative_text_opt` in job.json when `save_job_data`=True"}),
+        'positive_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `positive_text_opt` in job.json when `save_job_data`=True, and in the image's own metadata (Exif DocumentName tag for avif/webp/jxl/jpeg, `positive_prompt` text chunk for png/gif) when `save_metadata`=True"}),
+        'negative_text_opt': ('STRING', {'forceInput': True, 'tooltip': "Optional string saved as `negative_text_opt` in job.json when `save_job_data`=True, and in the image's own metadata (Exif DocumentName tag for avif/webp/jxl/jpeg, `negative_prompt` text chunk for png/gif) when `save_metadata`=True"}),
                     },
       'hidden': {'prompt': 'PROMPT', 'extra_pnginfo': 'EXTRA_PNGINFO'},
     }
@@ -635,24 +635,32 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     
     with open(json_file_path, 'w') as f:
       json.dump(existing_data, f, indent=4)
-  
-  
 
 
-  # ██████  ███    ██  ██████  
+  # forceInput 未接続時に widget のプレースホルダー値 ([str, number] 形式)
+  # が渡ってくることがあるため、実際に使える文字列だけを有効とみなす
+  def is_valid_prompt_text(self, value):
+    return isinstance(value, str) and len(value) > 0
+
+
+  # ██████  ███    ██  ██████
   # ██   ██ ████   ██ ██       
   # ██████  ██ ██  ██ ██   ███ 
   # ██      ██  ██ ██ ██    ██ 
   # ██      ██   ████  ██████  
 
-  def genMetadataPng(self, img, prompt, extra_pnginfo=None):
+  def genMetadataPng(self, img, prompt, extra_pnginfo=None, positive_text_opt=None, negative_text_opt=None):
     metadata = PngInfo()
     if prompt is not None:
       metadata.add_text('prompt', json.dumps(prompt))
     if extra_pnginfo is not None:
       for x in extra_pnginfo:
         metadata.add_text(x, json.dumps(extra_pnginfo[x]))
-    
+    if self.is_valid_prompt_text(positive_text_opt):
+      metadata.add_text('positive_prompt', positive_text_opt)
+    if self.is_valid_prompt_text(negative_text_opt):
+      metadata.add_text('negative_prompt', negative_text_opt)
+
     return metadata
   
   # ███████ ██   ██ ██ ███████ 
@@ -661,7 +669,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   # ██       ██ ██  ██ ██      
   # ███████ ██   ██ ██ ██      
 
-  def genMetadataEXIF(self, img, prompt, extra_pnginfo=None):
+  def genMetadataEXIF(self, img, prompt, extra_pnginfo=None, positive_text_opt=None, negative_text_opt=None):
     metadata = {}
     if prompt is not None:
       metadata["prompt"] = prompt
@@ -695,6 +703,18 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     # exif[0x9286] = "Prompt: " + json.dumps(metadata['prompt'])     # UserComment
     exif[0x010f] = "Prompt: " + json.dumps(metadata['prompt'])     # Make
     exif[0x010e] = "Workflow: " + json.dumps(metadata.get('workflow', {})) # ImageDescription
+
+    # positive/negative_text_opt are live node connections, so unlike the
+    # "workflow" field above (a frontend snapshot captured when the prompt
+    # was queued, which can lag behind during fast batch queueing) they
+    # always reflect the text actually used for this exact image.
+    if self.is_valid_prompt_text(positive_text_opt) or self.is_valid_prompt_text(negative_text_opt):
+      parts = []
+      if self.is_valid_prompt_text(positive_text_opt):
+        parts.append(f"Positive: {positive_text_opt}")
+      if self.is_valid_prompt_text(negative_text_opt):
+        parts.append(f"Negative: {negative_text_opt}")
+      exif[0x010d] = "\n".join(parts)  # DocumentName
     
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="unicode")  # type 4
     # exif[ExifTags.Base.UserComment] = piexif.helper.UserComment.dump(json.dumps(metadata), encoding="jis")      # type 1
@@ -736,7 +756,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
   # ██ ███ ██ ██   ██ ██    ██    ██      
   #  ███ ███  ██   ██ ██    ██    ███████ 
 
-  def writeImage(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality):
+  def writeImage(self, image_path, img, prompt, save_metadata=save_metadata, extra_pnginfo=None, quality=quality, positive_text_opt=None, negative_text_opt=None):
     if debug: print(f"debug writeImage: image_path={image_path}")
     if quality == 0:
       quality = self.quality
@@ -749,14 +769,14 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
     # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
     
     if output_ext in ['.avif', '.webp', '.jxl']:
-      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo, positive_text_opt, negative_text_opt)
       if quality == 100:
         kwargs["lossless"] = True
       else:
         kwargs["quality"] = quality
       kwargs["optimize"] = self.optimize_image
     if output_ext in ['.j2k', '.jp2', '.jpc', '.jpf', '.jpx', '.j2c']:
-      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo, positive_text_opt, negative_text_opt)
       if quality < 100:
         kwargs["irreversible"] = True
         # there is no such thing as compression level in JPEG2000. Read https://comprimato.com/blog/2017/06/22/bitrate-control-quality-layers-jpeg2000/
@@ -765,7 +785,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       else:
         kwargs["quality"] = quality
     elif output_ext in ['.jpg', '.jpeg']:
-      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["exif"] = self.genMetadataEXIF(img, prompt, extra_pnginfo, positive_text_opt, negative_text_opt)
       # https://stackoverflow.com/questions/19303621/why-is-the-quality-of-jpeg-images-produced-by-pil-so-poor
       kwargs["subsampling"] = 0
       kwargs["quality"] = quality
@@ -774,7 +794,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
       # tiff: no quality
       kwargs["optimize"] = self.optimize_image
     elif output_ext in ['.png', '.gif']:
-      if save_metadata: kwargs["pnginfo"] = self.genMetadataPng(img, prompt, extra_pnginfo)
+      if save_metadata: kwargs["pnginfo"] = self.genMetadataPng(img, prompt, extra_pnginfo, positive_text_opt, negative_text_opt)
     
       # png/gif: no quality, rather we convert quality to compression level in the 0-9 range
       old_min = 0
@@ -910,7 +930,7 @@ ComfyUI can only load PNG and WebP at the moment, AVIF is a PR that was sadly dr
             image_name = f'{filename_prefix}{output_ext}'
         
         image_path = os.path.join(output_path, image_name)
-        self.writeImage(image_path, img, prompt, save_metadata, extra_pnginfo, quality)
+        self.writeImage(image_path, img, prompt, save_metadata, extra_pnginfo, quality, positive_text_opt, negative_text_opt)
         
         if save_job_data != 'disabled' and job_data_per_image:
           self.save_job_to_json(save_job_data, prompt, filename_prefix, positive_text_opt, negative_text_opt, job_custom_text, resolution, output_path, f'{image_name.removesuffix(output_ext)}.json', timestamp)
